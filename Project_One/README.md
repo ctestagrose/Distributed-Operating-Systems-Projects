@@ -89,6 +89,10 @@ Example:
 We can sum the returned ```user``` and ```sys``` times and divide this value by the returned ```real``` time to obtain a ratio.
 
 ### 1. Performance Results
+I determined that the size of the work unit that results in best performance can be calculated by taking the ending value and dividing that by the number of workers. Each worker will be given a range of consecutive values to caluclate the consecutive sum of squares for. If the worker finds one, they will report it and continue to the next number in their range. 
+
+Due to the nature of how I am assigning the work to the workers, the number of sub-problems is dependent on the input ending value and the number of workers.
+
 Obtaining the run time for ```time ./Project_One_Non_Remote 1000000 4```: (64000 Workers were used - see additional analysis below)
 ![image](https://github.com/user-attachments/assets/ae08c87a-2461-44c5-bf2e-36b4c49d0674)
 Given the output from the time command we can calculate the CPU time to Real Time ratio
