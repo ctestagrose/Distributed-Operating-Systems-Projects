@@ -33,8 +33,8 @@ After the pony code has been compiled run the program with the following command
 
 ## 2. Project_One_Remote (Bonus Deliverable)
 This folder contains the Server and Client Pony code files designed to run Project 1 on two machines.
+Two computers are necessary to run this code as intended. 
 
-EXAMPLE IMAGES FOR SERVER ARE FROM WINDOWS DESKTOP MACHINE RUNNING SERVER CODE AND IMAGES FOR CLIENT ARE FROM A WINDOWS LAPTOP RUNNING CLIENT CODE IN WSL
 #### Usage
 On the server machine navigate to the Server subdirectory in Project_One_Remote and run the following command
 ```
