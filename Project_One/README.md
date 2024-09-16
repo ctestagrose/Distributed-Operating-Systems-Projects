@@ -94,8 +94,12 @@ We can sum the returned ```user``` and ```sys``` times and divide this value by 
 
 We can divide the ```Total worker CPU time (sec)``` value by the returned ```Real elapsed time (sec)``` to obtain a ratio.
 
-### 1. Non Remote Results
-Performance was tracked for End values up to 1,000,000,000 and a sequence length of 2 for 64, 640, 6400, and 64000 workers.
+### 1. Performance Results
+Performance was tracked for End values up to 1,000,000,000 and a sequence length of 2 for 64, 640, 6400, and 64000 workers. This analysis was performed using the non remote program to isolate performance of the program from networking latencies. 
+
 ![image](https://github.com/user-attachments/assets/709586e9-0f28-4630-95d2-7a8d47316720)
 ![image](https://github.com/user-attachments/assets/47507e2d-b426-4869-a35c-5d091743fa87)
+
+The calculated CPU time to Real Time ratio shows that as the as we increase the number of workers we see that the code is being parallelized more effectively. For very small problem sizes results seem random, implying that there is some overhead involved in parallelizing such a small problem. For large problem sizes we see that for all worker sizes we are achieving effect parallelization of the code. 
+
 
