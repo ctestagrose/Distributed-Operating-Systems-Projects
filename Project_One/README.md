@@ -126,9 +126,19 @@ The results for the remote code show similar performance to non remote code with
 
 #### 3. Largest Problems Solved
 Below is a collection of screenshots showing some of the largest problems I was able to solve using the non remote code. 
+
+1000000000 2
 ![image](https://github.com/user-attachments/assets/83ae9ff6-6045-45bf-bc03-99aad337f56c)
+
+100000000 20
 ![image](https://github.com/user-attachments/assets/1599f1b2-83da-4377-8771-92c5c9077151)
+
+1000000000 4
 ![image](https://github.com/user-attachments/assets/e5b9c977-e11c-4789-92f3-3a397a24ab4f)
+
+1000000000 10
 ![image](https://github.com/user-attachments/assets/4229dd78-40f9-4110-8cf4-19ed89f1155e)
+
+10000000 24
 ![image](https://github.com/user-attachments/assets/d74d1441-eeac-4e02-a7ef-a2c7b6ffb019)
 
