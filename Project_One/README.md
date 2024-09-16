@@ -11,7 +11,7 @@ The Pony programs developed for this project will take user input and determine 
 Before proceeding, please ensure proper installation of Pony by following the guidelines posted here: https://github.com/ponylang/ponyc
 
 ## This directory contains two folders that correspond to different setups for running Project 1.
-## 1. Project_One_Non_Remote
+## 1. Project_One_Non_Remote (The Main Deliverable)
 This folder contains the Pony code necessary to run Project 1 on a single machine without a remote server.
 #### Usage
 Navigate to the project directory and run the following command
@@ -31,7 +31,7 @@ After the pony code has been compiled run the program with the following command
 
 
 
-## 2. Project_One_Remote
+## 2. Project_One_Remote (Bonus Deliverable)
 This folder contains the Server and Client Pony code files designed to run Project 1 on two machines.
 
 EXAMPLE IMAGES FOR SERVER ARE FROM WINDOWS DESKTOP MACHINE RUNNING SERVER CODE AND IMAGES FOR CLIENT ARE FROM A WINDOWS LAPTOP RUNNING CLIENT CODE IN WSL
