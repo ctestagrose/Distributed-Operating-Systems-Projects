@@ -19,14 +19,16 @@ Navigate to the project directory and run the following command
 ponyc
 ```
 
-![image](https://github.com/user-attachments/assets/36d82da4-7aec-4e52-9ef8-006c98d00342)
+![image](https://github.com/user-attachments/assets/96939a11-a15e-4c58-92ee-f94f49dc9b0a)
+
 
 After the pony code has been compiled run the program with the following command:
 ```
 ./Project_One_Non_Remote <Ending Value> <Sequence Length>
 ```
 
-![image](https://github.com/user-attachments/assets/7d3738bf-c74e-4cd5-a944-f8742fcdf870)
+![image](https://github.com/user-attachments/assets/22870936-5b13-43ba-855a-d1e772e55e12)
+
 
 
 ## 2. Project_One_Remote
@@ -55,18 +57,20 @@ On the client machine navigate to the Client subdirectory in Project_One_Remote 
 ponyc
 ```
 
-![image](https://github.com/user-attachments/assets/28826457-f245-4e45-b0d7-58f0376c0919)
+![image](https://github.com/user-attachments/assets/142cc3af-5273-4f9d-bb01-aef3e476c279)
+
 
 After compliation run the Client by running:
 ```
-./Client <Ending Value> <Sequence Length>
+./Client <Ending Value> <Sequence Length> <Server IP>
 ```
 For Example:
 ```
 ./Client 5 2
 ```
 
-![image](https://github.com/user-attachments/assets/9badda4e-b99a-46e2-80db-7ef3cb9cae22)
+![image](https://github.com/user-attachments/assets/4bb8f9b1-9e0f-49c5-b6a8-16ab15efc221)
+
 
 
 # Performance Analysis
