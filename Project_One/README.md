@@ -13,7 +13,22 @@ Before proceeding, please ensure proper installation of Pony by following the gu
 ## This directory contains two folders that correspond to different setups for running Project 1.
 ## 1. Project_One_Non_Remote (The Main Deliverable)
 This folder contains the Pony code necessary to run Project 1 on a single machine without a remote server.
-#### Usage
+
+### Work-Flow
+When the program is started, the following steps occur:
+
+1. **Read Terminal Input**
+   - Main actor reads input and spawns a Boss actor.
+3. **Boss Actor**
+    - Boss Actor divides tasks and spawns Worker Actors
+4. **Worker Actors**
+    - Worker Actors process tasks
+    - Worker Actors send results and finish
+5. **Boss Actor Reports Results**
+    - Boss Actor collects results from Worker Actors
+    - Boss Actor reports the results to the User
+
+### Usage
 Navigate to the project directory and run the following command
 ```
 ponyc
@@ -30,12 +45,33 @@ After the pony code has been compiled run the program with the following command
 ![image](Images/screen_shot_2.png)
 
 
-
 ## 2. Project_One_Remote (Bonus Deliverable)
 This folder contains the Server and Client Pony code files designed to run Project 1 on two machines.
 Two computers are necessary to run this code as intended. 
 
-#### Usage
+### Work-Flow
+When the Server program is started, the following steps occur:
+1. **Main Actor**
+   - Main actor starts a TCPListener on port 8999
+When the Client program is started, the following steps occur:
+1. **Main Actor**
+    - Main Actor reads terminal input and attempts to connect to server.
+When Connection is established and data is received:
+1. **TCPConnectionNotify**
+    - Data is received and task is sent to the Main Actor to assign work to Workers .
+2. **Main Actor**
+    - Divides up the work and spawns Worker Actors.
+3. **Worker Actors**
+    - Worker Actors process tasks.
+    - Worker Actors send results to Client for printing to the user.
+    - Workers check in with Main Actor when done with their range of values.
+4. **Main Actor Performs Rollcall and Closes Connection**
+    - Main Actor ensures everyone has finished and closes the connection to the Client.
+After Connection to Client is Closed:
+1. **Main Actor**
+   - Main actor continues to listen on port 8999 for any additional connections 
+
+### Usage
 On the server machine navigate to the Server subdirectory in Project_One_Remote and run the following command
 ```
 ponyc
@@ -70,7 +106,6 @@ For Example:
 ```
 
 ![image](Images/screen_shot_6.png)
-
 
 
 # Performance Analysis
