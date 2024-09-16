@@ -1,9 +1,16 @@
 # Project 1 README
-This directory contains two folders that correspond to different setups for running Project 1.
+Project one focuses on finding perfect squares that are sums of consecutive
+squares. 
+* Pythagorean Identity: 3^2 + 4^2 = 5^2
+* Lucas‘ Square Pyramid : 1^2 + 2^2 + ... + 24^2 = 70^2
+
+The Pony programs developed for this project will take user input and determine if there exists any perfect squares that are sums of consecutive squares of a given sequence length and an ending search value. The programs will leverage the Actor model to build a solution that scales well on multi-core machines. 
+
 
 ## Dependencies
 Before proceeding, please ensure proper installation of Pony by following the guidelines posted here: https://github.com/ponylang/ponyc
 
+## This directory contains two folders that correspond to different setups for running Project 1.
 ## 1. Project_One_Non_Remote
 This folder contains the Pony code necessary to run Project 1 on a single machine without a remote server.
 #### Usage
