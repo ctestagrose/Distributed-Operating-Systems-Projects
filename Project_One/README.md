@@ -39,17 +39,18 @@ On the server machine navigate to the Server subdirectory in Project_One_Remote 
 ponyc
 ```
 
-![image](https://github.com/user-attachments/assets/5ae1f52e-6360-49b9-99ff-9d96a319ecfd)
+![image](https://github.com/user-attachments/assets/c473d602-9e5b-4ff2-8820-bd5dc3f3e378)
+
 
 After compliation run the Server by running:
 ```
 ./Server
 ```
 
-![image](https://github.com/user-attachments/assets/890be624-d4ab-42a4-b5a0-f549d35c5728)
+![image](https://github.com/user-attachments/assets/fccd1a04-d155-40af-805c-093b09dbc260)
 
 
-On the sclient machine navigate to the Client subdirectory in Project_One_Remote and run the following command
+On the client machine navigate to the Client subdirectory in Project_One_Remote and run the following command
 ```
 ponyc
 ```
