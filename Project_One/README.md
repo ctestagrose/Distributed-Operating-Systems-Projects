@@ -83,7 +83,8 @@ Values over 1 show some degree of parallelism with the larger values having grea
 #### 1. The non remote Pony program runs on a single machine and therefore can be analyzed for parallel performance by using the ```time``` command in Linux terminal.
 Example:
 
-![image](https://github.com/user-attachments/assets/79bd3f18-ebb0-4e15-a05f-8b49a6c9abcd)
+![image](https://github.com/user-attachments/assets/691d37d0-7061-4f0a-85e8-9d71d0511495)
+
 
 We can sum the returned ```user``` and ```sys``` times and divide this value by the returned ```real``` time to obtain a ratio.
 
@@ -92,3 +93,9 @@ We can sum the returned ```user``` and ```sys``` times and divide this value by 
 ![image](https://github.com/user-attachments/assets/35ff838a-c595-451f-9c02-ab7712b3287c)
 
 We can divide the ```Total worker CPU time (sec)``` value by the returned ```Real elapsed time (sec)``` to obtain a ratio.
+
+### 1. Non Remote Results
+Performance was tracked for End values up to 1,000,000,000 and a sequence length of 2 for 64, 640, 6400, and 64000 workers.
+![image](https://github.com/user-attachments/assets/709586e9-0f28-4630-95d2-7a8d47316720)
+![image](https://github.com/user-attachments/assets/47507e2d-b426-4869-a35c-5d091743fa87)
+
