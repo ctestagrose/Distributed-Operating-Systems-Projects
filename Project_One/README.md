@@ -123,3 +123,11 @@ The raw ratios calculated by summing the time spent by each worker and dividing 
 ![image](https://github.com/user-attachments/assets/356e47cc-83ac-4508-834f-40b147656f52)
 
 The results for the remote code show similar performance to non remote code with some interesting results for 64000 workers. The parallel ratio appears to be best for 64 workers as it increases as the problem size increases. The adjustments made to the code to make it remote may be to blame for the reduction in the parallel ratio for more workers. Due to being new to Pony, I am certain there are areas of the code that could benefit from optimization or may be causing a slight reduction in the parallel efficiency. 
+
+#### 3. Largest Problems Solved
+![image](https://github.com/user-attachments/assets/83ae9ff6-6045-45bf-bc03-99aad337f56c)
+![image](https://github.com/user-attachments/assets/1599f1b2-83da-4377-8771-92c5c9077151)
+![image](https://github.com/user-attachments/assets/e5b9c977-e11c-4789-92f3-3a397a24ab4f)
+![image](https://github.com/user-attachments/assets/4229dd78-40f9-4110-8cf4-19ed89f1155e)
+![image](https://github.com/user-attachments/assets/d74d1441-eeac-4e02-a7ef-a2c7b6ffb019)
+
