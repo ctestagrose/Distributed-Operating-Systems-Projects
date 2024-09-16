@@ -89,7 +89,19 @@ Example:
 We can sum the returned ```user``` and ```sys``` times and divide this value by the returned ```real``` time to obtain a ratio.
 
 ### 1. Performance Results
-Performance was tracked for End values up to 1,000,000,000 and a sequence length of 2 for 64, 640, 6400, and 64000 workers. This analysis was performed using the non remote program to isolate performance of the program from networking latencies. 
+Obtaining the run time for ```time ./Project_One_Non_Remote 1000000 4```: (64000 Workers were used - see additional analysis below)
+![image](https://github.com/user-attachments/assets/ae08c87a-2461-44c5-bf2e-36b4c49d0674)
+Given the output from the time command we can calculate the CPU time to Real Time ratio
+* (0.063 + 0.469) / 0.120 = 4.43
+This result shows that effective parallelization is taking place.
+
+We can also increase the problem size and perform ```time ./Project_One_Non_Remote 100000000 20```:
+![image](https://github.com/user-attachments/assets/c53c6b4a-f689-4258-893f-8d73b6826fe9)
+* (0.078 + 11.750) / 1.489 = 7.94
+
+To determine how increasing the problem size and the number of workers, additional analysis was performed. 
+
+Performance was tracked for end values up to 1,000,000,000 and a sequence length of 2 for 64, 640, 6400, and 64000 workers. This analysis was performed using the non remote program to isolate performance of the program from networking latencies. 
 
 ![image](https://github.com/user-attachments/assets/709586e9-0f28-4630-95d2-7a8d47316720)
 ![image](https://github.com/user-attachments/assets/47507e2d-b426-4869-a35c-5d091743fa87)
@@ -102,4 +114,8 @@ The calculated CPU time to Real Time ratio shows that as the as we increase the 
 
 We can divide the ```Total worker CPU time (sec)``` value by the returned ```Real elapsed time (sec)``` to obtain a ratio.
 
-Results for this are not reported but in the Demo to the instructor can be displayed. 
+The raw ratios calculated by summing the time spent by each worker and dividing by the real time are displayed in the table below. These values were normalized for visualization purposes in the line chart below. 
+![image](https://github.com/user-attachments/assets/36280f9f-e11a-4ae3-852a-e476e4f48bf3)
+![image](https://github.com/user-attachments/assets/356e47cc-83ac-4508-834f-40b147656f52)
+
+The results for the remote code show similar performance to non remote code. 
