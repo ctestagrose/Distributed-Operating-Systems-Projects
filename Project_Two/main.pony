@@ -46,10 +46,10 @@ actor Worker
     _env = env
     _id= id
     _neighbors = Array[Worker tag]
-    _rng = Rand(Time.now()._2.u64())
+    _rng = Rand(Time.now()._2.u64() + _id)
     _coordinator = coordinator
     _algorithm = algorithm
-    let timerIso = Timer(WorkerTimerNotify(this, _algorithm), 100, 100)
+    let timerIso = Timer(WorkerTimerNotify(this, _algorithm), 10_000, 10_000)
     _timer = timerIso
     timers(consume timerIso) 
     s = _id.f64()
@@ -61,20 +61,22 @@ actor Worker
     end
 
   be receive_rumor(recieved_rumor: String) =>
-    if message_count == 0 then 
-      rumor = recieved_rumor 
+    if recieved_rumor == "" then return end
+
+    if rumor == "" then
+      rumor = recieved_rumor
       _coordinator.worker_received_rumor(_id)
     end
 
     message_count = message_count + 1
 
-    if (message_count >= 10) and not converged then
+    if (message_count >= 3) and not converged then
       converged = true
       _coordinator.worker_converged(_id)
     end
 
   be send_rumor() =>
-    if (_neighbors.size() > 0) and (rumor_terminated == false) then
+    if (_neighbors.size() > 0) and (rumor_terminated == false) and (rumor != "") then
       try
         let neighbor_index: U64 = _rng.int(_neighbors.size().u64())
         let neighbor = _neighbors(neighbor_index.usize())?
@@ -92,7 +94,7 @@ actor Worker
     let new_estimate = s / w
     let diff = (new_estimate - last_estimate).abs()
 
-    if (message_count > 10) and (diff < 1e-10) then
+    if (message_count >= 3) and (diff < 1e-10) then
       stable_count = stable_count + 1
     else
       stable_count = 0
@@ -100,7 +102,7 @@ actor Worker
 
     last_estimate = new_estimate
 
-    if (stable_count >= 3) and not converged then
+    if (stable_count > 3) and not converged then
       converged = true
       _coordinator.worker_converged(_id)
     end
@@ -207,11 +209,11 @@ actor Coordinator
   fun setup_line_topology() =>
     for i in Range[USize](0, _workers.size()) do
       try
-          if i > 0 then
-            _workers(i)?.add_neighbor(_workers(i - 1)?)
-            _workers(i - 1)?.add_neighbor(_workers(i)?)
-          end
+        if i > 0 then
+          _workers(i)?.add_neighbor(_workers(i - 1)?)
+          _workers(i - 1)?.add_neighbor(_workers(i)?)
         end
+      end
     end
     _env.out.print("Line topology setup complete.")
     send_command()
@@ -229,40 +231,58 @@ actor Coordinator
     _env.out.print("Full network topology setup complete.")
     send_command()
 
-  fun setup_3d_grid_topology() =>
-    let dim = (_workers.size().f64().pow(1/3).ceil()).usize()
-    for i in Range[USize](0, _workers.size()) do
-      try
-        let worker = _workers(i)?
-        let x = i % dim
-        let y = (i / dim) % dim
-        let z = i / (dim * dim)
-        if x > 0 then 
-          worker.add_neighbor(_workers(i-1)?) 
+fun setup_3d_grid_topology() =>
+  let dim = (_workers.size().f64().pow(1.0/3.0)).ceil().usize()
+  let grid_size = dim * dim * dim
+  for i in Range[USize](0, _workers.size()) do
+    try
+      let worker = _workers(i)?
+      let x = i % dim
+      let y = (i / dim) % dim
+      let z = (i / (dim * dim)) % dim
+      if x > 0 then 
+        let neighbor_index = i - 1
+        if (neighbor_index >= 0) and (neighbor_index < _workers.size()) then
+          worker.add_neighbor(_workers(neighbor_index)?)
         end
-        if x < (dim-1) then 
-          worker.add_neighbor(_workers(i+1)?) 
+      end
+      if x < (dim - 1) then 
+        let neighbor_index = i + 1
+        if (neighbor_index >= 0) and (neighbor_index < _workers.size()) then
+          worker.add_neighbor(_workers(neighbor_index)?)
         end
-        if y > 0 then
-          worker.add_neighbor(_workers(i-dim)?) 
+      end
+      if y > 0 then
+        let neighbor_index = i - dim
+        if (neighbor_index >= 0) and (neighbor_index < _workers.size()) then
+            worker.add_neighbor(_workers(neighbor_index)?)
+          end
         end
-        if y < (dim-1) then 
-          worker.add_neighbor(_workers(i+dim)?) 
+      if y < (dim - 1) then
+        let neighbor_index = i + dim
+        if (neighbor_index >= 0) and (neighbor_index < _workers.size()) then
+          worker.add_neighbor(_workers(neighbor_index)?)
         end
-        if z > 0 then 
-          worker.add_neighbor(_workers(i-(dim*dim))?) 
+      end
+      if z > 0 then
+        let neighbor_index = i - (dim * dim)
+        if (neighbor_index >= 0) and (neighbor_index < _workers.size()) then
+          worker.add_neighbor(_workers(neighbor_index)?)
         end
-        if z < (dim-1) then 
-          worker.add_neighbor(_workers(i+(dim*dim))?) 
+      end
+      if z < (dim - 1) then
+        let neighbor_index = i + (dim * dim)
+        if (neighbor_index >= 0) and (neighbor_index < _workers.size()) then
+          worker.add_neighbor(_workers(neighbor_index)?)
         end
       end
     end
-    _env.out.print("3D Grid topology setup complete.")
-    send_command()
+  end
+  _env.out.print("3D Grid topology setup complete.")
+  send_command()
 
 
   fun setup_imperfect_3d_grid_topology() =>
-
     let dim = (_workers.size().f64().pow(1/3).ceil()).usize()
     for i in Range[USize](0, _workers.size()) do
       try
@@ -271,22 +291,22 @@ actor Coordinator
         let y = (i / dim) % dim
         let z = i / (dim * dim)
         if x > 0 then 
-          worker.add_neighbor(_workers(i-1)?) 
+          worker.add_neighbor(_workers(i - 1)?) 
         end
-        if x < (dim-1) then 
-          worker.add_neighbor(_workers(i+1)?) 
+        if x < (dim - 1) then 
+          worker.add_neighbor(_workers(i + 1)?) 
         end
         if y > 0 then
-          worker.add_neighbor(_workers(i-dim)?) 
+          worker.add_neighbor(_workers(i - dim)?) 
         end
-        if y < (dim-1) then 
-          worker.add_neighbor(_workers(i+dim)?) 
+        if y < (dim - 1) then 
+          worker.add_neighbor(_workers(i + dim)?) 
         end
         if z > 0 then 
-          worker.add_neighbor(_workers(i-(dim*dim))?) 
+          worker.add_neighbor(_workers(i - (dim * dim))?) 
         end
-        if z < (dim-1) then 
-          worker.add_neighbor(_workers(i+(dim*dim))?) 
+        if z < (dim - 1) then 
+          worker.add_neighbor(_workers(i + (dim * dim))?) 
         end
       end
     end
