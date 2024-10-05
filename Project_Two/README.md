@@ -82,6 +82,18 @@ Gossip
 | 1000            | N/A      | 128.46  |	135.87 |	115.15      |
 | 2500            | N/A      | 1445.83 |  N/A    |	N/A         |
 | 5000            | N/A      | 5070.31 |	N/A    |	N/A         |
+(N/A entries did not take a reasonable amount of time to run)
+
+Push-Sum
+| Number of Nodes | Line     | Full      | 3D      | Imperfect 3D |
+| --------------- | -------- | --------- | ------- | ------------ |
+| 100             | 2250.76  | 80.35     | 452.44  |	161.02      |
+| 250             | 5894.76  | 121.34    | 882.45  |	274.67      |
+| 500             | 9911.10  | 191.31    | 1375.56 |	317.37      |
+| 1000            | N/A      | 412.39    | 2852.10 |	554.96      |
+| 2500            | N/A      | 2806.87   | N/A     |	N/A         |
+| 5000            | N/A      | 108944.90 | N/A     |	N/A         |
+(N/A entries did not take a reasonable amount of time to run)
 
 ## Discussion
 From the results for both Gossip and Push-Sum we can see that the Line topology is the slowest to converge. This result is clearly due to the 2D nature of the topology, bottlenecking the propagation of the rumor/push-sum. The next slowest to converge was the 3D grid topology, like the 2D topology, the 3D topology is restricted by the number of neighbors that the nodes have (6 in this case vs. 2 for Line). Imperfect 3D grid was the second fastest topology for convergence, this is due to each node having an additional neighbor outside of its 6 immediate neighboring nodes. The fastest topology to converge was the Full (Complete) topology. This is an expected result as each node has connections to all other nodes in the topology, allowing for quick convergence of rumors and push-sums. 
