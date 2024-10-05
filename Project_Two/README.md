@@ -29,7 +29,7 @@ When the program is started, the following steps occur:
     - If the algorithm is push-sum each worker starts with quantities s and w (the starting values of s and w are the worker's id and 1 repectively).
 4. **Worker Actors**
     - If Gossip is the algorithm: Workers will randomly select a neighbor and tell that worker the rumor. (This algorithm is considered converged when each actor has received the rumor 3 times)
-    - If Push-Sum: Workers will randomly select a worker and halve its values of s and w. Half is kept and the other half if sent to the other worker. The receiving worker will then add these values to their own and repeat the process. (This algorithm is considered converged when the ratio of s and w for each actor has not changed for 10 messages received)
+    - If Push-Sum: Workers will randomly select a worker and halve its values of s and w. Half is kept and the other half if sent to the other worker. The receiving worker will then add these values to their own and repeat the process. (This algorithm is considered converged when the ratio of s and w for each actor is stable for 3 messages received)
 
 ### Usage
 Navigate to the project directory and run the following command
@@ -45,5 +45,8 @@ After the pony code has been compiled run the program with the following command
 ./Project_Two <Number of Workers> <Topology> <Algorithm>
 ```
 
-
+## What is Working
+I was able to implement both algorithms and all the topologies there are a few interesting things that I have noted along the way. 
+1. Due to the random selection of the starting worker there can be outliers in the timing of convergence for both algorithms on the Line topology.
+2. Using more than 5000 workers/node/actors on a moderately powerful gaming laptop (Intel i7 and 16 GB of RAM) for the Full Topology causes linux terminal to crash and force close the program - this was noticed when running experiments for the largest network size for each algorithm.
 
