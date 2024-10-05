@@ -82,6 +82,7 @@ Gossip
 | 1000            | N/A      | 128.46  |	135.87 |	115.15      |
 | 2500            | N/A      | 1445.83 |  N/A    |	N/A         |
 | 5000            | N/A      | 5070.31 |	N/A    |	N/A         |
+
 (N/A entries did not take a reasonable amount of time to run)
 
 Push-Sum
@@ -93,6 +94,7 @@ Push-Sum
 | 1000            | N/A      | 412.39    | 2852.10 |	554.96      |
 | 2500            | N/A      | 2806.87   | N/A     |	N/A         |
 | 5000            | N/A      | 108944.90 | N/A     |	N/A         |
+
 (N/A entries did not take a reasonable amount of time to run)
 
 ## Discussion
