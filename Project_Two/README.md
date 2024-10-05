@@ -46,7 +46,22 @@ After the pony code has been compiled run the program with the following command
 ```
 
 ## What is Working
-I was able to implement both algorithms and all the topologies there are a few interesting things that I have noted along the way. 
+I was able to implement both algorithms and all the topologies.
+
+
+## Experimental Results
+Time to Converge for Gossip in milliseconds (ms)
+| Number of Nodes | Line     | Full  | 3D    | Imperfect 3D |
+| --------------- | -------- | ----- | ----- | ------------ |
+| 10              | 9.71     | 8.53  |	7.50  |	6.36        |
+| 25              | 23.49    | 10.19 |	11.41 |	10.66       |
+| 50              | 57.50    | 13.11 |	17.10 |	13.21       |
+| 75              | 108.33   | 13.80 |	18.10 |	14.21       |
+| 100             | 118.87   | 14.66 |	19.93 |	17.66       |
+| 125             | 149.12   | 15.22 |	22.68 |	17.42       |
+| 150             | 169.12   | 16.57 |	23.57 |	17.90       |
+
+## Interesting Observations
 1. Due to the random selection of the starting worker there can be outliers in the timing of convergence for both algorithms on the Line topology.
 2. Using more than 5000 workers/node/actors on a moderately powerful gaming laptop (Intel i7 and 16 GB of RAM) for the Full Topology causes linux terminal to crash and force close the program - this was noticed when running experiments for the largest network size for each algorithm.
 
