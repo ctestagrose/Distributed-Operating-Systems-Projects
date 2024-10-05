@@ -93,7 +93,7 @@ Push-Sum
 | 500             | 9911.10  | 191.31    | 1375.56 |	317.37      |
 | 1000            | N/A      | 412.39    | 2852.10 |	554.96      |
 | 2500            | N/A      | 2806.87   | N/A     |	N/A         |
-| 5000            | N/A      | 108944.90 | N/A     |	N/A         |
+| 5000            | N/A      | 10944.90 | N/A     |	N/A         |
 
 (N/A entries did not take a reasonable amount of time to run)
 
