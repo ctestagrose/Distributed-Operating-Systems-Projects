@@ -1,10 +1,23 @@
 # Project 2 README
 Project two focuses on Gossip algorithms. Gossip algorithms can be utilized for both group communication and aggregate computational tasks. The goal of this project is to determine the convergence of both rumor propogation and push-sum algorithms using simulations in Pony. Since actors in Pony are fully asynchronous, Asynchronous Gossip is used to accomplish this task.
 
+## Group Members
+Conrad Testagrose
+
 ## Dependencies
 Before proceeding, please ensure proper installation of Pony by following the guidelines posted here: https://github.com/ponylang/ponyc
 
-### Work-Flow
+## Algorithms
+1. Gossip: Propogate a rumor to all actors startings from a single actor.
+2. Push-Sum: Computes a sum estimate using random messages passed to actors in a given topology.
+
+## Topologies
+1. Line: Actors are arranged a 2D line with each actor (excluding the first and last) having two neighbors (the actor immediately before and after).
+2. Full: Any given actor is a neighbor to all other actors in the topology (Complete Graph)
+3. 3D: Actors are arranged in a 3D grid. Each actor has 6 neighbors and can only pass messages to those neighbors.
+4. Imperfect3D: Actors are arranged in a 3D grid, however, each actor has an additional connection to a random actor not including itself or any of it current neighbors. 
+
+## Work-Flow
 When the program is started, the following steps occur:
 
 1. **Read Terminal Input**
@@ -12,10 +25,11 @@ When the program is started, the following steps occur:
 3. **Coordinator Actor**
     - Spawns the requested number of workers.
     - Creates the requested topology with the spawned workers.
-    - The Coordinator then tells a worker to either start propogating a rumor or start push-sum
+    - The Coordinator then tells a worker to either start propogating a rumor or start push-sum.
+    - If the algorithm is push-sum each worker starts with quantities s and w.
 4. **Worker Actors**
-    - If Gossip is the algorithm: Workers will randomly select a neighbor and tell that worker the rumor.
-    - If Push-Sum: Workers will randomly select a worker and push 
+    - If Gossip is the algorithm: Workers will randomly select a neighbor and tell that worker the rumor. (This algorithm is considered converged when each actor has received the rumor 3 times)
+    - If Push-Sum: Workers will randomly select a worker and halve its values of s and w. Half is kept and the other half if sent to the other worker. The receiving worker will then add these values to their own and repeat the process. (This algorithm is considered converged when the ratio of s and w for each actor has not changed for 10 messages received)
 
 ### Usage
 Navigate to the project directory and run the following command
@@ -30,4 +44,6 @@ After the pony code has been compiled run the program with the following command
 ```
 ./Project_Two <Number of Workers> <Topology> <Algorithm>
 ```
+
+
 
