@@ -26,7 +26,7 @@ When the program is started, the following steps occur:
     - Spawns the requested number of workers.
     - Creates the requested topology with the spawned workers.
     - The Coordinator then tells a worker to either start propogating a rumor or start push-sum.
-    - If the algorithm is push-sum each worker starts with quantities s and w.
+    - If the algorithm is push-sum each worker starts with quantities s and w (the starting values of s and w are the worker's id and 1 repectively).
 4. **Worker Actors**
     - If Gossip is the algorithm: Workers will randomly select a neighbor and tell that worker the rumor. (This algorithm is considered converged when each actor has received the rumor 3 times)
     - If Push-Sum: Workers will randomly select a worker and halve its values of s and w. Half is kept and the other half if sent to the other worker. The receiving worker will then add these values to their own and repeat the process. (This algorithm is considered converged when the ratio of s and w for each actor has not changed for 10 messages received)
