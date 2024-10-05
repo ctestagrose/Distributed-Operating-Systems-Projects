@@ -61,6 +61,17 @@ Time to Converge for Gossip in milliseconds (ms)
 | 125             | 149.12   | 15.22 |	22.68 |	17.42       |
 | 150             | 169.12   | 16.57 |	23.57 |	17.90       |
 
+Time to Converge for Push-Sum in milliseconds (ms)
+| Number of Nodes | Line     | Full  | 3D     | Imperfect 3D |
+| --------------- | -------- | ----- | ------ | ------------ |
+| 10              | 239.08	  | 58.32 | 120.11 |	86.68        |
+| 25              | 533.61	  | 65.47 |	185.62 |	129.18       |
+| 50              | 1063.05  | 69.87 |	254.16 |	142.99       |
+| 75              | 1373.25  | 75.66 |	417.81 |	169.50       |
+| 100             | 2120.77  | 81.38 |	461.42 |	166.21       |
+| 125             | 3211.04  | 82.03 |	504.94 |	190.28       |
+| 150             | 3629.06  | 84.35 |	596.97 |	201.67       |
+
 ## Interesting Observations
 1. Due to the random selection of the starting worker there can be outliers in the timing of convergence for both algorithms on the Line topology.
 2. Using more than 5000 workers/node/actors on a moderately powerful gaming laptop (Intel i7 and 16 GB of RAM) for the Full Topology causes linux terminal to crash and force close the program - this was noticed when running experiments for the largest network size for each algorithm.
