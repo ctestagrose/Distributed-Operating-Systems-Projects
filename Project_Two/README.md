@@ -100,6 +100,8 @@ Push-Sum
 ## Discussion
 From the results for both Gossip and Push-Sum we can see that the Line topology is the slowest to converge. This result is clearly due to the 2D nature of the topology, bottlenecking the propagation of the rumor/push-sum. The next slowest to converge was the 3D grid topology, like the 2D topology, the 3D topology is restricted by the number of neighbors that the nodes have (6 in this case vs. 2 for Line). Imperfect 3D grid was the second fastest topology for convergence, this is due to each node having an additional neighbor outside of its 6 immediate neighboring nodes. The fastest topology to converge was the Full (Complete) topology. This is an expected result as each node has connections to all other nodes in the topology, allowing for quick convergence of rumors and push-sums. 
 
+As for the largest network solved for, the full topology with 5000 actors was able to complete in 10944.90 ms. When increased past 5000 the Linux terminal crashed. 
+
 ## Interesting Observations
 1. Due to the random selection of the starting worker there can be outliers in the timing of convergence for both algorithms on the Line topology.
 2. Using more than 5000 workers/node/actors on a moderately powerful gaming laptop (Intel i7 and 16 GB of RAM) for the Full Topology causes linux terminal to crash and force close the program - this was noticed when running experiments for the largest network size for each algorithm.
