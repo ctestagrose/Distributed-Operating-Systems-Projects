@@ -76,9 +76,11 @@ actor Worker
     end
 
   be send_rumor() =>
+    let random_sel: Random = Rand(Time.now()._2.u64() + _rng.u64())
     if (_neighbors.size() > 0) and (rumor_terminated == false) and (rumor != "") then
       try
-        let neighbor_index: U64 = _rng.int(_neighbors.size().u64())
+        // let neighbor_index: U64 = _rng.int(_neighbors.size().u64())
+        let neighbor_index: U64 = random_sel.int(_neighbors.size().u64())
         let neighbor = _neighbors(neighbor_index.usize())?
         neighbor.receive_rumor(rumor)
       end
@@ -126,8 +128,9 @@ actor Worker
           s_to_send = s_half
           w_to_send = w_half
         end
-
-        let neighbor_index: U64 = _rng.int(_neighbors.size().u64())
+        let random_sel: Random = Rand(Time.now()._2.u64() + _rng.u64())
+        // let neighbor_index: U64 = _rng.int(_neighbors.size().u64())
+        let neighbor_index: U64 = random_sel.int(_neighbors.size().u64())
         let neighbor = _neighbors(neighbor_index.usize())?
         neighbor.receive_push_sum(s_to_send, w_to_send)
       end
