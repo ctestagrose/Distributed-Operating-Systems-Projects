@@ -37,9 +37,6 @@ Navigate to the project directory and run the following command
 ponyc
 ```
 
-![image]()
-
-
 After the pony code has been compiled run the program with the following command:
 ```
 ./Project_Two <Number of Workers> <Topology> <Algorithm>
@@ -61,6 +58,8 @@ Time to Converge for Gossip in milliseconds (ms)
 | 125             | 149.12   | 15.22 |	22.68 |	17.42       |
 | 150             | 169.12   | 16.57 |	23.57 |	17.90       |
 
+![image](Images/GossipChart.png)
+
 Time to Converge for Push-Sum in milliseconds (ms)
 | Number of Nodes | Line     | Full  | 3D     | Imperfect 3D |
 | --------------- | -------- | ----- | ------ | ------------ |
@@ -71,6 +70,8 @@ Time to Converge for Push-Sum in milliseconds (ms)
 | 100             | 2120.77  | 81.38 |	461.42 |	166.21       |
 | 125             | 3211.04  | 82.03 |	504.94 |	190.28       |
 | 150             | 3629.06  | 84.35 |	596.97 |	201.67       |
+
+![image](Images/PushSumChart.png)
 
 Largest Network Tests
 Gossip
