@@ -58,3 +58,13 @@ After running and providing the input, a centralized Actor will begin the simula
 - In the implementation not using the SHA256
 
 
+## What is Working
+1. Initialization of Chord Network (creation of peers with ids - determination of ids differs between the two implementations provided).
+2. Each Peer/Node has a successor and predecessor.
+3. Peers initialize finger tables - as per the publication on the Chord Protocol, this is integral to the achievement of speed of lookup.
+4. Nodes attempt to look up a key and "hop" to other peers in the network until either the queried key is found on the node with the key or its successor/predecessor.
+5. Nodes report the number of hops to the actor responsible for spawning the nodes and aggregating the number of hops.
+6. Report the average number of hops to find a key in the network and exit.
+
+## Largest Network Dealt With
+I was able to successfully get a network of 10,000 actors to complete. A network of this size is possible due to the neture of Pony's actor paradigm. A network of this size does take quite sometime to complete on a modestly powerful gaming/performance oriented laptop. 
