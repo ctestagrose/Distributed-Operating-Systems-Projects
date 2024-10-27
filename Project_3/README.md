@@ -2,15 +2,15 @@
 Project 3 focuses on implementing a Chord: P2P System and Simulation
 
 # Note
-There are two directories included. To use the Pony Crypto package (allows for using SHA256 for consistent hashing) the installation of corral and compilation of the Pony program must use Corral.
+There are two directories included. To use the Pony Crypto package (allows for using SHA for consistent hashing) the installation of corral and compilation of the Pony program must use Corral.
 Therefore the directory "Insert Directory Name" uses the Crypto package and compiles using ``` corral run -- ponyc ```. The other directory, "Insert Other Directory Name", does not use external packages and compiles using ```ponyc```
 
-Example (Non-SHA256)
+Example (Non-SHA)
 ```
 /DOS_Project_3 ponyc
 ```
 
-Example (SHA256)
+Example (SHA)
 ```
 /DOS_Project_3_SHA corral run ponyc 
 ```
@@ -54,8 +54,27 @@ Example Input/Output
 
 ## Workflow
 After running and providing the input, a centralized Actor will begin the simulation by spawning the nodes and assigning them ids
-- In the implementation using SHA, a "fake/simulated" IPV4 address will be assigned to each actor and then hashed to provide an id.
-- In the implementation not using the SHA256
+- In the implementation using SHA.
+  1. Entry point takes number of nodes and requests as arguments.
+  2. A ring of N nodes with randomly assigned "fake/simulated" IPV4 addresses will be hashed to provide an id.
+  3. Nodes are connected in a circular fashion where each node knows about its successor and predecessor.
+  4. Finger tables are initialized by each node to ensure efficient routing of messages.
+  5. The message sending (Lookup) process is initiated - each node sends M messages where M is a argument provided at runtime.
+  6. The project outline asks for a message/second but I decided to have each actor wait a random amount of time between 1ns and 1sec before sending messages. This helps model random lookup and prevents too many messages being sent at the same time. 
+  7. The finger tables are used to route requests efficiently.
+  8. The numebr of hops taken for each lookup is tracked and reported to the actor that spawns the nodes and aggregates hop reporting.
+  9. The average number of hops is reported to the user and the program terminates.
+    
+- In the implementation not using SHA
+  1. Entry point takes number of nodes and requests as arguments.
+  2. A ring of N nodes with randomly assigned IDs is created.
+  3. Nodes are connected in a circular fashion where each node knows about its successor and predecessor.
+  4. Finger tables are initialized by each node to ensure efficient routing of messages.
+  5. The message sending (Lookup) process is initiated - each node sends M messages where M is a argument provided at runtime.
+  6. The project outline asks for a message/second but I decided to have each actor wait a random amount of time between 1ns and 1sec before sending messages. This helps model random lookup and prevents too many messages being sent at the same time. 
+  7. The finger tables are used to route requests efficiently.
+  8. The numebr of hops taken for each lookup is tracked and reported to the actor that spawns the nodes and aggregates hop reporting.
+  9. The average number of hops is reported to the user and the program terminates. 
 
 
 ## What is Working
@@ -67,4 +86,4 @@ After running and providing the input, a centralized Actor will begin the simula
 6. Report the average number of hops to find a key in the network and exit.
 
 ## Largest Network Dealt With
-I was able to successfully get a network of 10,000 actors to complete. A network of this size is possible due to the neture of Pony's actor paradigm. A network of this size does take quite sometime to complete on a modestly powerful gaming/performance oriented laptop. 
+I was able to successfully get a network of 10,000 actors to complete. A network of this size is possible due to the neture of Pony's actor paradigm. A network of this size does take quite sometime to complete on a modestly powerful gaming/performance oriented laptop. Attempting 100,000 actors lead to a terminal crash. 
