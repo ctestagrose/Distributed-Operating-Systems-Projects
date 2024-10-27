@@ -86,4 +86,4 @@ After running and providing the input, a centralized Actor will begin the simula
 6. Report the average number of hops to find a key in the network and exit.
 
 ## Largest Network Dealt With
-I was able to successfully get a network of 10,000 actors to complete. A network of this size is possible due to the neture of Pony's actor paradigm. A network of this size does take quite sometime to complete on a modestly powerful gaming/performance oriented laptop. Attempting 100,000 actors lead to a terminal crash. 
+I was able to successfully get a network of 10,000 actors to complete. A network of this size is possible due to the neture of Pony's actor paradigm. A network of greater than this size does take quite sometime to complete on a modestly powerful gaming/performance oriented laptop. Attempting 100,000 actors lead to a terminal crash. 
