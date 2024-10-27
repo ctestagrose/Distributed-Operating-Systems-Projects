@@ -16,6 +16,11 @@ Example (Non-SHA)
 ```
 
 Example (SHA)
+Install corral from the ponylang team
+```
+ponyup update corral release
+```
+Then compile...
 ```
 /DOS_Project_3_SHA corral run ponyc 
 ```
