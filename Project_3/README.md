@@ -3,8 +3,8 @@ Project 3 focuses on implementing a Chord: P2P System and Simulation (Chord: A S
 
 The implementation is written in Pony and provides two variants:
 
-- A basic implementation using random node IDs
-- A more advanced implementation using SHA for consistent hashing (More closely follows the original Chord paper) - Requires corral (https://github.com/ponylang/corral) and the Ponylang Crypto Package (https://github.com/ponylang/crypto?tab=readme-ov-file). Additionally, this requires Openssl which is easily installed on most Linux distributions. 
+- A basic implementation using random node IDs and a keyspace of $2^m$
+- A more advanced implementation using SHA for consistent hashing (More closely follows the original Chord paper) - Requires corral (https://github.com/ponylang/corral) and the Ponylang Crypto Package (https://github.com/ponylang/crypto?tab=readme-ov-file). Additionally, this requires Openssl which is easily installed on most Linux distributions (This code was not tested on Windows/Mac OSX). 
 
 # Note
 To use the Pony Crypto package (allows for using SHA for consistent hashing) the installation of corral and compilation of the Pony program must use Corral. To ensure appropriate submission of the porject and maintain compatibility with other systems I have provided two directorys (DOS_Project_3 and DOS_Project_3_SHA).
@@ -63,19 +63,7 @@ Example Input/Output
   ```
 
 ## Workflow
-After running and providing the input, a centralized Actor will begin the simulation by spawning the nodes and assigning them ids
-- In the implementation using SHA.
-  1. Entry point takes number of nodes and requests as arguments.
-  2. A ring of N nodes is created, each node is randomly assigned "fake/simulated" IPV4 addresses that will be hashed to provide an id.
-  3. Nodes are connected in a circular fashion where each node knows about its successor and predecessor.
-  4. Finger tables are initialized by each node to ensure efficient routing of messages.
-  5. The message sending (Lookup) process is initiated - each node sends M messages where M is a argument provided at runtime.
-  6. The project outline asks for a message/second but I decided to have each actor wait a random amount of time between 1ns and 1sec before sending messages. This helps model random lookup and prevents too many messages being sent at the same time. 
-  7. The finger tables are used to route requests efficiently.
-  8. The numebr of hops taken for each lookup is tracked and reported to the actor that spawns the nodes and aggregates hop reporting.
-  9. The average number of hops is reported to the user and the program terminates.
-    
-- In the implementation not using SHA
+In the implementation not using SHA
   1. Entry point takes number of nodes and requests as arguments.
   2. A ring of N nodes with randomly assigned IDs is created.
   3. Nodes are connected in a circular fashion where each node knows about its successor and predecessor.
@@ -85,6 +73,18 @@ After running and providing the input, a centralized Actor will begin the simula
   7. The finger tables are used to route requests efficiently.
   8. The numebr of hops taken for each lookup is tracked and reported to the actor that spawns the nodes and aggregates hop reporting.
   9. The average number of hops is reported to the user and the program terminates. 
+
+In the implementation using SHA.
+  1. Entry point takes number of nodes and requests as arguments.
+  2. A ring of N nodes is created, each node is randomly assigned "fake/simulated" IPV4 addresses that will be hashed to provide an id.
+  3. Nodes are connected in a circular fashion where each node knows about its successor and predecessor.
+  4. Finger tables are initialized by each node to ensure efficient routing of messages.
+  5. The message sending (Lookup) process is initiated - each node sends M messages where M is a argument provided at runtime.
+  6. The project outline asks for a message/second but I decided to have each actor wait a random amount of time between 1ns and 1sec before sending messages. This helps model random lookup and prevents too many messages being sent at the same time. 
+  7. The finger tables are used to route requests efficiently.
+  8. The numebr of hops taken for each lookup is tracked and reported to the actor that spawns the nodes and aggregates hop reporting.
+  9. The average number of hops is reported to the user and the program terminates.
+
 
 
 ## What is Working
