@@ -1,6 +1,11 @@
 # Project #3 README
 Project 3 focuses on implementing a Chord: P2P System and Simulation (Chord: A Scalable Peer-to-peer Lookup Service for Internet Applicationsby Ion Stoica,  Robert  Morris,  David  Karger,  M.  Frans  Kaashoek,  Hari  Balakrishnan. https://pdos.csail.mit.edu/papers/ton:chord/paper-ton.pdf).
 
+The implementation is written in Pony and provides two variants:
+
+- A basic implementation using random node IDs
+- A more advanced implementation using SHA for consistent hashing (More closely follows the original Chord paper)
+
 # Note
 To use the Pony Crypto package (allows for using SHA for consistent hashing) the installation of corral and compilation of the Pony program must use Corral. To ensure appropriate submission of the porject and maintain compatibility with other systems I have provided two directorys (DOS_Project_3 and DOS_Project_3_SHA).
 DOS_Project_3_SHA uses the Crypto package and compiles using ``` corral run -- ponyc ```. The other directory, DOS_Project_3, does not use external packages and compiles using ```ponyc```. 
