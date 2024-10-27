@@ -8,7 +8,8 @@ The implementation is written in Pony and provides two variants:
 
 # Note
 To use the Pony Crypto package (allows for using SHA for consistent hashing) the installation of corral and compilation of the Pony program must use Corral. To ensure appropriate submission of the porject and maintain compatibility with other systems I have provided two directorys (DOS_Project_3 and DOS_Project_3_SHA).
-DOS_Project_3_SHA uses the Crypto package and compiles using ``` corral run -- ponyc ```. The other directory, DOS_Project_3, does not use external packages and compiles using ```ponyc```. 
+* DOS_Project_3, does not use external packages and compiles using ```ponyc```.
+* DOS_Project_3_SHA uses the Crypto package and compiles using ``` corral run -- ponyc ```. Please ensure you have corral and openssl setup on your system. This code has not been verified to work on Windows systems. 
 
 Example (Non-SHA)
 ```
