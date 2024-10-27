@@ -4,6 +4,9 @@ use "time"
 use "lib:c" if not windows
 use "lib:libssl-32" if windows
 use "lib:libcrypto-32" if windows
+//use "lib:ssl" if not windows
+//use "lib:crypto" if not windows
+//use "path:/usr/local/opt/libressl/lib" if osx
 use "crypto"
 
 use @pow[F64](base: F64, exp: F64)
