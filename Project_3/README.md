@@ -4,7 +4,7 @@ Project 3 focuses on implementing a Chord: P2P System and Simulation (Chord: A S
 The implementation is written in Pony and provides two variants:
 
 - A basic implementation using random node IDs
-- A more advanced implementation using SHA for consistent hashing (More closely follows the original Chord paper)
+- A more advanced implementation using SHA for consistent hashing (More closely follows the original Chord paper) - Requires corral (https://github.com/ponylang/corral)
 
 # Note
 To use the Pony Crypto package (allows for using SHA for consistent hashing) the installation of corral and compilation of the Pony program must use Corral. To ensure appropriate submission of the porject and maintain compatibility with other systems I have provided two directorys (DOS_Project_3 and DOS_Project_3_SHA).
