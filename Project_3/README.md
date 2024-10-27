@@ -2,8 +2,8 @@
 Project 3 focuses on implementing a Chord: P2P System and Simulation
 
 # Note
-There are two directories included. To use the Pony Crypto package (allows for using SHA for consistent hashing) the installation of corral and compilation of the Pony program must use Corral.
-Therefore the directory "Insert Directory Name" uses the Crypto package and compiles using ``` corral run -- ponyc ```. The other directory, "Insert Other Directory Name", does not use external packages and compiles using ```ponyc```
+To use the Pony Crypto package (allows for using SHA for consistent hashing) the installation of corral and compilation of the Pony program must use Corral. To ensure appropriate submission of the porject and maintain compatibility with other systems I have provided two directorys (DOS_Project_3 and DOS_Project_3_SHA).
+DOS_Project_3_SHA uses the Crypto package and compiles using ``` corral run -- ponyc ```. The other directory, DOS_Project_3, does not use external packages and compiles using ```ponyc```. 
 
 Example (Non-SHA)
 ```
