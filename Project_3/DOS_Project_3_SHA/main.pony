@@ -1,7 +1,9 @@
 use "collections"
 use "random"
 use "time"
-use "lib:c"
+use "lib:c" if not windows
+use "lib:libssl-32" if windows
+use "lib:libcrypto-32" if windows
 use "crypto"
 
 use @pow[F64](base: F64, exp: F64)
