@@ -56,7 +56,7 @@ Example Input/Output
 After running and providing the input, a centralized Actor will begin the simulation by spawning the nodes and assigning them ids
 - In the implementation using SHA.
   1. Entry point takes number of nodes and requests as arguments.
-  2. A ring of N nodes with randomly assigned "fake/simulated" IPV4 addresses will be hashed to provide an id.
+  2. A ring of N nodes is created, each node is randomly assigned "fake/simulated" IPV4 addresses that will be hashed to provide an id.
   3. Nodes are connected in a circular fashion where each node knows about its successor and predecessor.
   4. Finger tables are initialized by each node to ensure efficient routing of messages.
   5. The message sending (Lookup) process is initiated - each node sends M messages where M is a argument provided at runtime.
