@@ -4,7 +4,7 @@ Project 3 focuses on implementing a Chord: P2P System and Simulation (Chord: A S
 The implementation is written in Pony and provides two variants:
 
 - A basic implementation using random node IDs and a keyspace of $2^m$
-- A more advanced implementation using SHA for consistent hashing (More closely follows the original Chord paper) - Requires corral (https://github.com/ponylang/corral) and the Ponylang Crypto Package (https://github.com/ponylang/crypto?tab=readme-ov-file). Additionally, this requires Openssl which is easily installed on most Linux distributions (This code was not tested on Windows/Mac OSX). 
+- A more advanced implementation using SHA for consistent hashing (More closely follows the original Chord paper) - Requires corral (https://github.com/ponylang/corral) and the Ponylang Crypto Package (https://github.com/ponylang/crypto?tab=readme-ov-file). Additionally, this requires Openssl which is easily installed on most Linux distributions (This code was not tested on Windows). 
 
 ## Note
 To use the Pony Crypto package (allows for using SHA for consistent hashing) the installation of corral and compilation of the Pony program must use Corral. To ensure appropriate submission of the porject and maintain compatibility with other systems I have provided two directorys (DOS_Project_3 and DOS_Project_3_SHA).
@@ -12,6 +12,13 @@ To use the Pony Crypto package (allows for using SHA for consistent hashing) the
 DOS_Project_3, does not use external packages and compiles using ```ponyc```.
 
 DOS_Project_3_SHA uses the Crypto package and compiles using ``` corral run -- ponyc ```. Please ensure you have corral and openssl setup on your system. This code has not been verified to work on Windows systems (This program was developed on a system running ArchLinux and has not been validated to run on Windows - the use commands instructed by pony documentation to use crypto and c libraries in pony with windows were included but not verified to work). 
+* When installing OpenSSL on Mac, you may need to perform the following:
+  ```
+  brew install libressl
+  ln -s /opt/homebrew/opt/libressl/ /usr/local/opt/
+  corral fetch
+  /DOS_Project_3_SHA corral run ponyc
+  ```
 
 Example (Non-SHA)
   ```
@@ -29,7 +36,7 @@ Example (SHA)
     ```
   * Then compile...
     ```
-    /DOS_Project_3_SHA corral run ponyc 
+    /DOS_Project_3_SHA corral run ponyc
     ```
 
 ## Group Members
