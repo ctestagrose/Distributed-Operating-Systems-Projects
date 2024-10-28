@@ -6,25 +6,31 @@ The implementation is written in Pony and provides two variants:
 - A basic implementation using random node IDs and a keyspace of $2^m$
 - A more advanced implementation using SHA for consistent hashing (More closely follows the original Chord paper) - Requires corral (https://github.com/ponylang/corral) and the Ponylang Crypto Package (https://github.com/ponylang/crypto?tab=readme-ov-file). Additionally, this requires Openssl which is easily installed on most Linux distributions (This code was not tested on Windows/Mac OSX). 
 
-# Note
+## Note
 To use the Pony Crypto package (allows for using SHA for consistent hashing) the installation of corral and compilation of the Pony program must use Corral. To ensure appropriate submission of the porject and maintain compatibility with other systems I have provided two directorys (DOS_Project_3 and DOS_Project_3_SHA).
-* DOS_Project_3, does not use external packages and compiles using ```ponyc```.
-* DOS_Project_3_SHA uses the Crypto package and compiles using ``` corral run -- ponyc ```. Please ensure you have corral and openssl setup on your system. This code has not been verified to work on Windows systems (This program was developed on a system running ArchLinux and has not been validated to run on Windows - the use commands instructed by pony documentation to use crypto and c libraries in pony with windows were included but not verified to work). 
+
+DOS_Project_3, does not use external packages and compiles using ```ponyc```.
+
+DOS_Project_3_SHA uses the Crypto package and compiles using ``` corral run -- ponyc ```. Please ensure you have corral and openssl setup on your system. This code has not been verified to work on Windows systems (This program was developed on a system running ArchLinux and has not been validated to run on Windows - the use commands instructed by pony documentation to use crypto and c libraries in pony with windows were included but not verified to work). 
 
 Example (Non-SHA)
-```
-/DOS_Project_3 ponyc
-```
+  ```
+  /DOS_Project_3 ponyc
+  ```
 
 Example (SHA)
-Install corral from the ponylang team
-```
-ponyup update corral release
-```
-Then compile...
-```
-/DOS_Project_3_SHA corral run ponyc 
-```
+  * Install corral from the ponylang team
+    ```
+    ponyup update corral release
+    ```
+  * Fetch Dependencies
+    ```
+    corral fetch
+    ```
+  * Then compile...
+    ```
+    /DOS_Project_3_SHA corral run ponyc 
+    ```
 
 ## Group Members
 Conrad Testagrose
