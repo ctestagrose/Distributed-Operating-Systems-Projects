@@ -96,7 +96,7 @@ In the implementation using SHA.
   5. The message sending (Lookup) process is initiated - each node sends M messages where M is a argument provided at runtime.
   6. The project outline asks for a message/second but I decided to have each actor wait a random amount of time between 1ns and 1sec before sending messages. This helps model random lookup and prevents too many messages being sent at the same time. 
   7. The finger tables are used to route requests efficiently.
-  8. The numebr of hops taken for each lookup is tracked and reported to the actor that spawns the nodes and aggregates hop reporting.
+  8. The number of hops taken for each lookup is tracked and reported to the actor that spawns the nodes and aggregates hop reporting.
   9. The average number of hops is reported to the user and the program terminates.
 
 
@@ -111,3 +111,14 @@ In the implementation using SHA.
 
 ## Largest Network Dealt With
 I was able to successfully get a network of 10,000 actors to complete. A network of this size is possible due to the neture of Pony's actor paradigm. A network of greater than this size does take quite sometime to complete on a modestly powerful gaming/performance oriented laptop. Attempting 100,000 actors lead to a terminal crash. 
+
+## Average Number of Hops
+For 10, 100, 250, 500, 1000 nodes, the average number of hops was determined for 100 messages/node. Increasing the number of does increase the average number of hops but due to the finger tables and successor/predecessor portions of the protocol the Chord P2P networks scales well as the number of nodes increases. 
+
+Num Nodes | Non-SHA	| SHA 
+----------|---------|-----
+10	      | 1.69	  | 1.60
+100       |	3.23    |	3.10
+250       |	3.98    |	3.81
+500       |	4.47    |	4.41
+1000      | 	4.98  |	4.86
