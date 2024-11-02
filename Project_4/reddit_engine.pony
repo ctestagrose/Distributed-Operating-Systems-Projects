@@ -2,6 +2,7 @@ use "collections"
 use "random"
 use "time"
 
+
 class RedditEngine
   var users: Map[String, User] ref
   var subreddits: Map[String, Subreddit] ref
@@ -19,59 +20,69 @@ class RedditEngine
   fun ref run(num_users: U64) =>
     _env.out.print("Welcome to the Reddit Engine Simulator!")
     
+    // 1. Create users
     for i in Range[USize](0, num_users.usize()) do
       let random_name = generate_random_string()
       register_user(random_name)
       _env.out.print("Registered new user: " + random_name)
     end
-
     _env.out.print("\nAll registered users: " + ",".join(users.keys()))
 
     try
-      // Pick first user as subreddit creator
-      let creator = users.keys().next()?
+      // 2. Get our test users
+      var user_iter = users.keys()
+      let creator = user_iter.next()?    // First user - will create subreddit
+      let poster = user_iter.next()?     // Second user - will create first post
+      let commenter = user_iter.next()?  // Third user - will comment on post
+      
       let subreddit_name = "programming"
       
-      _env.out.print("\n\nTesting subreddit creation and joining:")
+      // 3. Test subreddit creation
+      _env.out.print("\n=== Testing Subreddit Creation ===")
       _env.out.print("User " + creator + " is creating subreddit: " + subreddit_name)
-      
       create_subreddit(subreddit_name)
       join_subreddit(creator, subreddit_name)
-
-      create_post(creator, subreddit_name, "First Post!", "Hello World!")
-
-      var leaving_user: String = ""
-      for username in users.keys() do
-        if username != creator then
-          join_subreddit(username, subreddit_name)
-          _env.out.print("User " + username + " joined " + subreddit_name)
-          // Store one username to test leaving later
-          leaving_user = username
-        end
-      end
-
-      print_subreddit_posts(subreddit_name)
-
-      print_subreddit_stats(subreddit_name)
-
-      if leaving_user != "" then
-        _env.out.print("\nTesting leave functionality:")
-        _env.out.print("User " + leaving_user + " is leaving " + subreddit_name)
-        leave_subreddit(leaving_user, subreddit_name)
-        
-        // Print updated stats after user leaves
-        print_subreddit_stats(subreddit_name)
+      
+      // 4. Have users join
+      _env.out.print("\n=== Testing Join Functionality ===")
+      join_subreddit(poster, subreddit_name)
+      _env.out.print(poster + " joined " + subreddit_name)
+      join_subreddit(commenter, subreddit_name)
+      _env.out.print(commenter + " joined " + subreddit_name)
+      
+      // Add remaining users
+      for username in user_iter do
+        join_subreddit(username, subreddit_name)
+        _env.out.print(username + " joined " + subreddit_name)
       end
       
+      // 5. Test posting
+      _env.out.print("\n=== Testing Posting Functionality ===")
+      create_post(poster, subreddit_name, "First Post!", "Hello World!")
+      
+      // 6. Test commenting
+      _env.out.print("\n=== Testing Comment Functionality ===")
+      add_comment(commenter, subreddit_name, 0, "Great first post!")
+      add_comment(poster, subreddit_name, 0, "Thanks for the comment!")
+      add_comment(creator, subreddit_name, 0, "Welcome to the subreddit!")
+      
+      // 7. Display current state
+      _env.out.print("\n=== Current Subreddit State ===")
+      print_subreddit_stats(subreddit_name)
+      print_subreddit_posts(subreddit_name)
+      
+      // 8. Test leaving
+      _env.out.print("\n=== Testing Leave Functionality ===")
+      _env.out.print("User " + commenter + " is leaving " + subreddit_name)
+      leave_subreddit(commenter, subreddit_name)
+      
+      // 9. Display final state
+      _env.out.print("\n=== Final Subreddit State ===")
+      print_subreddit_stats(subreddit_name)
+    else
+      _env.out.print("Error: Need at least 3 users to test all functionality")
     end
 
-  fun ref print_subreddit_stats(subreddit_name: String) =>
-    try
-      let sub = subreddits(subreddit_name)?
-      _env.out.print("\nSubreddit " + subreddit_name + " stats:")
-      _env.out.print("Member count: " + sub.get_member_count().string())
-      _env.out.print("Members: " + ",".join(sub.get_members_clone().values()))
-    end
 
 
   fun ref print_subreddit_posts(subreddit_name: String) =>
@@ -83,8 +94,27 @@ class RedditEngine
         _env.out.print("\nTitle: " + post.title)
         _env.out.print("Author: " + post.author)
         _env.out.print("Content: " + post.content)
+        
+        // Print comments
+        let comments = post.get_comments()
+        if comments.size() > 0 then
+          _env.out.print("\nComments:")
+          for comment in comments.values() do
+            _env.out.print("  " + comment.get_author() + ": " + comment.get_content())
+          end
+        end
+        _env.out.print("---")
       end
     end
+
+  fun ref print_subreddit_stats(subreddit_name: String) =>
+    try
+      let sub = subreddits(subreddit_name)?
+      _env.out.print("\nSubreddit " + subreddit_name + " stats:")
+      _env.out.print("Member count: " + sub.get_member_count().string())
+      _env.out.print("Members: " + ",".join(sub.get_members_clone().values()))
+    end
+
 
   fun ref create_post(username: String, subreddit_name: String, title: String, content: String) =>
     try
@@ -93,6 +123,17 @@ class RedditEngine
         _env.out.print(username + " created a post in " + subreddit_name + ": " + title)
       else
         _env.out.print("Error: " + username + " is not a member of " + subreddit_name)
+      end
+    end
+
+
+  fun ref add_comment(username: String, subreddit_name: String, post_index: USize, content: String) =>
+    try
+      let subreddit = subreddits(subreddit_name)?
+      if subreddit.add_comment_to_post(post_index, username, content) then
+        _env.out.print(username + " commented on post " + post_index.string())
+      else
+        _env.out.print("Error: " + username + " could not comment (either not a member or invalid post)")
       end
     end
 
@@ -116,11 +157,13 @@ class RedditEngine
       users.insert(username, new_user)
     end
 
+
   fun ref create_subreddit(name: String) =>
     if not subreddits.contains(name) then
       let new_subreddit = Subreddit(name)
       subreddits.insert(name, new_subreddit)
     end
+
 
   fun ref join_subreddit(username: String, subreddit_name: String) =>
     try
@@ -128,11 +171,14 @@ class RedditEngine
       subreddit.add_member(username)
     end
 
+
   fun ref leave_subreddit(username: String, subreddit_name: String) =>
     try
       (let user, let subreddit) = (users(username)?, subreddits(subreddit_name)?)
       subreddit.remove_member(username)
     end
+
+
 
 class Subreddit
   let name: String
@@ -171,12 +217,60 @@ class Subreddit
   fun ref get_posts(): Array[Post] ref =>
     posts
 
+  fun ref add_comment_to_post(post_index: USize, author: String, content: String): Bool =>
+    try
+      if members.contains(author) then
+        posts(post_index)?.add_comment(author, content)
+        true
+      else
+        false
+      end
+    else
+      false
+    end
+
+
+
 class Post
   let title: String
   let content: String
   let author: String
+  var comments: Array[Comment] ref
   
   new create(title': String, content': String, author': String) =>
     title = title'
     content = content'
     author = author'
+    comments = Array[Comment]
+    
+  fun ref add_comment(comment_author: String, comment_content: String) =>
+    let comment = Comment(comment_author, comment_content)
+    comments.push(comment)
+    
+  fun ref get_comments(): Array[Comment] ref =>
+    comments
+
+
+
+class Comment
+  let author: String
+  let content: String
+  var replies: Array[Comment] ref
+  
+  new create(author': String, content': String) =>
+    author = author'
+    content = content'
+    replies = Array[Comment]
+    
+  fun ref add_reply(reply: Comment) =>
+    replies.push(reply)
+    
+  fun get_author(): String =>
+    author
+    
+  fun get_content(): String =>
+    content
+    
+  fun ref get_replies(): Array[Comment] ref =>
+    replies
+
