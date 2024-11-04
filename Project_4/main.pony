@@ -5,8 +5,8 @@ actor Main
       let args = env.args
       let num_users = args(1)?.u64()?
       
-      let engine = RedditEngine
-      engine.run(env, num_users)
+      let engine = RedditEngine(env)
+      engine.run(num_users)
     else
       env.out.print("Usage: ./implementation numUsers")
     end

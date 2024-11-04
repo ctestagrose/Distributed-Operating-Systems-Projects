@@ -65,18 +65,30 @@ class RedditEngine
       add_comment(commenter, subreddit_name, 0, "Great first post!")
       add_comment(poster, subreddit_name, 0, "Thanks for the comment!")
       add_comment(creator, subreddit_name, 0, "Welcome to the subreddit!")
+
+      // 7. Test voting
+      _env.out.print("\n=== Testing Voting Functionality ===")
+      // Vote on post
+      vote_on_post(creator, subreddit_name, 0, true)  // Creator upvotes
+      vote_on_post(commenter, subreddit_name, 0, true)  // Commenter upvotes
+      vote_on_post(poster, subreddit_name, 0, false)  // Poster downvotes (testing)
+
+      // Vote on comments
+      vote_on_comment(creator, subreddit_name, 0, 0, true)  // Vote on first comment
+      vote_on_comment(poster, subreddit_name, 0, 0, true)   
+      vote_on_comment(commenter, subreddit_name, 0, 1, false)  // Vote on second comment
       
-      // 7. Display current state
+      // 8. Display current state
       _env.out.print("\n=== Current Subreddit State ===")
       print_subreddit_stats(subreddit_name)
       print_subreddit_posts(subreddit_name)
       
-      // 8. Test leaving
+      // 9. Test leaving
       _env.out.print("\n=== Testing Leave Functionality ===")
       _env.out.print("User " + commenter + " is leaving " + subreddit_name)
       leave_subreddit(commenter, subreddit_name)
       
-      // 9. Display final state
+      // 10. Display final state
       _env.out.print("\n=== Final Subreddit State ===")
       print_subreddit_stats(subreddit_name)
     else
@@ -94,13 +106,15 @@ class RedditEngine
         _env.out.print("\nTitle: " + post.title)
         _env.out.print("Author: " + post.author)
         _env.out.print("Content: " + post.content)
+        _env.out.print("Score: " + post.get_score().string())
         
         // Print comments
         let comments = post.get_comments()
         if comments.size() > 0 then
           _env.out.print("\nComments:")
           for comment in comments.values() do
-            _env.out.print("  " + comment.get_author() + ": " + comment.get_content())
+            _env.out.print("  " + comment.get_author() + ": " + comment.get_content() + 
+              " [Score: " + comment.get_score().string() + "]")
           end
         end
         _env.out.print("---")
@@ -134,6 +148,36 @@ class RedditEngine
         _env.out.print(username + " commented on post " + post_index.string())
       else
         _env.out.print("Error: " + username + " could not comment (either not a member or invalid post)")
+      end
+    end
+  
+  fun ref vote_on_comment(username: String, subreddit_name: String, post_index: USize, 
+    comment_index: USize, is_upvote: Bool) =>
+    try
+      let subreddit = subreddits(subreddit_name)?
+      if subreddit.vote_on_comment(post_index, comment_index, username, is_upvote) then
+        var up_or_down = ""
+        if is_upvote then 
+          up_or_down = " upvoted "
+        else 
+          up_or_down = " downvoted " 
+        end
+        _env.out.print(username + " "+ up_or_down + 
+          " comment " + comment_index.string() + " on post " + post_index.string())
+      end
+    end
+
+  fun ref vote_on_post(username: String, subreddit_name: String, post_index: USize, is_upvote: Bool) =>
+    try
+      let subreddit = subreddits(subreddit_name)?
+      if subreddit.vote_on_post(post_index, username, is_upvote) then
+        var up_or_down = ""
+        if is_upvote then 
+          up_or_down = " upvoted "
+        else 
+          up_or_down = " downvoted " 
+        end
+        _env.out.print(username + " "+ up_or_down + " post " + post_index.string())
       end
     end
 
@@ -229,6 +273,40 @@ class Subreddit
       false
     end
 
+  fun ref vote_on_post(post_index: USize, username: String, is_upvote: Bool): Bool =>
+    try
+      if members.contains(username) then
+        let post = posts(post_index)?
+        if is_upvote then
+          post.upvote(username)
+        else
+          post.downvote(username)
+        end
+        true
+      else
+        false
+      end
+    else
+      false
+    end
+
+  fun ref vote_on_comment(post_index: USize, comment_index: USize, username: String, is_upvote: Bool): Bool =>
+    try
+      if members.contains(username) then
+        let comment = posts(post_index)?.get_comments()(comment_index)?
+        if is_upvote then
+          comment.upvote(username)
+        else
+          comment.downvote(username)
+        end
+        true
+      else
+        false
+      end
+    else
+      false
+    end
+
 
 
 class Post
@@ -236,12 +314,16 @@ class Post
   let content: String
   let author: String
   var comments: Array[Comment] ref
+  var upvotes: Set[String] ref
+  var downvotes: Set[String] ref
   
   new create(title': String, content': String, author': String) =>
     title = title'
     content = content'
     author = author'
     comments = Array[Comment]
+    upvotes = Set[String]
+    downvotes = Set[String]
     
   fun ref add_comment(comment_author: String, comment_content: String) =>
     let comment = Comment(comment_author, comment_content)
@@ -250,17 +332,32 @@ class Post
   fun ref get_comments(): Array[Comment] ref =>
     comments
 
+  fun ref upvote(username: String) =>
+    downvotes.unset(username)  // Remove downvote if exists
+    upvotes.set(username)
+    
+  fun ref downvote(username: String) =>
+    upvotes.unset(username)    // Remove upvote if exists
+    downvotes.set(username)
+    
+  fun get_score(): I64 =>
+    upvotes.size().i64() - downvotes.size().i64()
+
 
 
 class Comment
   let author: String
   let content: String
   var replies: Array[Comment] ref
+  var upvotes: Set[String] ref
+  var downvotes: Set[String] ref
   
   new create(author': String, content': String) =>
     author = author'
     content = content'
     replies = Array[Comment]
+    upvotes = Set[String]
+    downvotes = Set[String]
     
   fun ref add_reply(reply: Comment) =>
     replies.push(reply)
@@ -273,4 +370,15 @@ class Comment
     
   fun ref get_replies(): Array[Comment] ref =>
     replies
+
+  fun ref upvote(username: String) =>
+    downvotes.unset(username)  // Remove downvote if exists
+    upvotes.set(username)
+    
+  fun ref downvote(username: String) =>
+    upvotes.unset(username)    // Remove upvote if exists
+    downvotes.set(username)
+
+  fun get_score(): I64 =>
+    upvotes.size().i64() - downvotes.size().i64()
 
