@@ -88,6 +88,62 @@ class Subreddit
       false
     end
 
+fun ref add_nested_comment(post_index: USize, parent_comment_indices: Array[USize], 
+  author: String, content: String): Bool =>
+  try
+    if members.contains(author) then
+      let post = posts(post_index)?
+      var current_comments = post.get_comments()
+      
+      if parent_comment_indices.size() > 0 then
+        var target_comment: Comment = current_comments(parent_comment_indices(0)?)?
+        
+        for i in Range(1, parent_comment_indices.size()) do
+          let idx = parent_comment_indices(i)?
+          current_comments = target_comment.get_replies()
+          target_comment = current_comments(idx)?
+        end
+        
+        let new_comment = Comment(author, content)
+        target_comment.add_reply(new_comment)
+      else
+        post.add_comment(author, content)
+      end
+      true
+    else
+      false
+    end
+  else
+    false
+  end
+
+  fun ref vote_on_nested_comment(post_index: USize, comment_indices: Array[USize], 
+    username: String, is_upvote: Bool): Bool =>
+    try
+      if members.contains(username) then
+        let post = posts(post_index)?
+        var current_comments = post.get_comments()
+        var target_comment: Comment = current_comments(comment_indices(0)?)?
+        
+        for i in Range(1, comment_indices.size()) do
+          let idx = comment_indices(i)?
+          current_comments = target_comment.get_replies()
+          target_comment = current_comments(idx)?
+        end
+        
+        if is_upvote then
+          target_comment.upvote(username)
+        else
+          target_comment.downvote(username)
+        end
+        true
+      else
+        false
+      end
+    else
+      false
+    end
+
 
 primitive SortType
   fun hot(): U8 => 0
@@ -97,10 +153,6 @@ primitive SortType
 
 primitive PostSorter
   fun apply(posts: Array[Post] ref, sort_type: U8): Array[Post] ref^ =>
-    """
-    Sorts posts based on the specified sort type.
-    Returns a new array containing sorted posts.
-    """
     match sort_type
     | SortType.hot() => sort_by_hot(posts)
     | SortType.controversial() => sort_by_controversial(posts)
@@ -111,33 +163,21 @@ primitive PostSorter
     end
 
   fun sort_by_hot(posts: Array[Post] ref): Array[Post] ref^ =>
-    """
-    Sorts posts by hot score (combination of score and time)
-    """
     let sorted = posts.clone()
     _quicksort_by[F64](sorted, {(post: Post): F64 => post.get_hot_score()}, 0, sorted.size().isize() - 1)
     sorted
 
   fun sort_by_controversial(posts: Array[Post] ref): Array[Post] ref^ =>
-    """
-    Sorts posts by controversy score
-    """
     let sorted = posts.clone()
     _quicksort_by[F64](sorted, {(post: Post): F64 => post.get_controversy_score()}, 0, sorted.size().isize() - 1)
     sorted
 
   fun sort_by_top(posts: Array[Post] ref): Array[Post] ref^ =>
-    """
-    Sorts posts by total score (upvotes - downvotes)
-    """
     let sorted = posts.clone()
     _quicksort_by[I64](sorted, {(post: Post): I64 => post.get_score()}, 0, sorted.size().isize() - 1)
     sorted
 
   fun sort_by_new(posts: Array[Post] ref): Array[Post] ref^ =>
-    """
-    Sorts posts by creation time
-    """
     let sorted = posts.clone()
     _quicksort_by[I64](sorted, {(post: Post): I64 => post.created_at}, 0, sorted.size().isize() - 1)
     sorted
@@ -146,25 +186,16 @@ primitive PostSorter
     arr: Array[Post] ref,
     get_value: {(Post): A} val,
     left: ISize,
-    right: ISize)
-  =>
-    """
-    Generic quicksort implementation that sorts posts based on a value extractor function.
-    Uses the median-of-three method for pivot selection to improve performance on
-    partially sorted arrays.
-    """
+    right: ISize) =>
     if left >= right then return end
     
     try
-      // Get the pivot using median-of-three method
       let mid = (left + right) / 2
       let pivot_idx = _median_of_three[A](arr, get_value, left, mid, right)?
       
-      // Move pivot to end
       arr.swap_elements(pivot_idx.usize(), right.usize())?
       let pivot_value = get_value(arr(right.usize())?)
       
-      // Partition
       var store_idx = left
       var i = left
       while i < right do
@@ -175,10 +206,8 @@ primitive PostSorter
         i = i + 1
       end
       
-      // Move pivot to final position
       arr.swap_elements(store_idx.usize(), right.usize())?
       
-      // Recursively sort sub-arrays
       _quicksort_by[A](arr, get_value, left, store_idx - 1)
       _quicksort_by[A](arr, get_value, store_idx + 1, right)
     end
@@ -188,12 +217,7 @@ primitive PostSorter
     get_value: {(Post): A} val,
     left: ISize,
     mid: ISize,
-    right: ISize): ISize?
-  =>
-    """
-    Helper function to find the median of three elements.
-    Returns the index of the median value.
-    """
+    right: ISize): ISize? =>
     let a = get_value(arr(left.usize())?)
     let b = get_value(arr(mid.usize())?)
     let c = get_value(arr(right.usize())?)
