@@ -8,6 +8,7 @@ class RedditEngine
   var subreddits: Map[String, Subreddit] ref
   let _random: Random
   let _env: Env
+  let _feed_generator: Feed
 
 
   new create(env: Env) =>
@@ -15,6 +16,7 @@ class RedditEngine
     users = Map[String, User]
     subreddits = Map[String, Subreddit]
     _random = Rand(Time.now()._2.u64())
+    _feed_generator = Feed(env)
 
 
   fun ref run(num_users: U64) =>
@@ -96,7 +98,71 @@ class RedditEngine
         print_subreddit_posts(subreddit_name)
 
       end
+
+      // Test Direct Messaging System
+      _env.out.print("\n=== Testing Direct Messaging System ===")
       
+      // Test simple messages between users
+      _env.out.print("\nTest 1: Basic Direct Messages")
+      send_direct_message(creator, poster, "Hey, I loved your posts in the programming subreddit!")
+      send_direct_message(poster, creator, "Thanks! I'm enjoying the community.")
+      send_direct_message(commenter, creator, "Great job moderating the subreddits!")
+      
+      // Show messages for each user
+      _env.out.print("\nShowing messages for all users:")
+      show_user_messages(creator)
+      show_user_messages(poster)
+      show_user_messages(commenter)
+      
+      // Test message threading
+      _env.out.print("\nTest 2: Message Threading")
+      let thread_id: String val = (Time.now()._1.string() + "_" + creator).clone().string()
+      send_direct_message(creator, commenter, "Want to be a moderator for r/programming?", thread_id.clone())
+      send_direct_message(commenter, creator, "I'd love to! What are the responsibilities?", thread_id.clone())
+      send_direct_message(creator, commenter, "Help manage posts and enforce rules.", thread_id.clone())
+      send_direct_message(commenter, creator, "Sounds good, count me in!", thread_id.clone())
+      
+      // Show the full conversation thread
+      _env.out.print("\nShowing full moderator discussion thread:")
+      show_message_thread(creator, thread_id.clone())
+      
+      // Test multiple concurrent conversations
+      _env.out.print("\nTest 3: Multiple Concurrent Conversations")
+      let thread_2: String val = (Time.now()._1.string() + "_" + poster).clone().string()
+      send_direct_message(poster, creator, "Can you help me with a technical question?", thread_2.clone())
+      send_direct_message(poster, commenter, "Saw your helpful comments!")
+      send_direct_message(creator, poster, "Sure, what's your question?", thread_2.clone())
+      
+      _env.out.print("\nFinal message status for all users:")
+      show_user_messages(creator)
+      show_user_messages(poster)
+      show_user_messages(commenter)
+      
+      _env.out.print("\n=== Direct Messaging Test Complete ===")
+      
+
+      _env.out.print("\n=== Testing Feed Generation ===")
+      try
+        let active_user = users.keys().next()?
+        
+        // Show user feed with different sorts
+        _env.out.print("\nUser Feed - Hot:")
+        get_user_feed(active_user, SortType.hot()).display(_env)
+        
+        _env.out.print("\nUser Feed - New:")
+        get_user_feed(active_user, SortType.new_p()).display(_env)
+        
+        _env.out.print("\nUser Feed - Top:")
+        get_user_feed(active_user, SortType.top()).display(_env)
+        
+        _env.out.print("\nUser Feed - Controversial:")
+        get_user_feed(active_user, SortType.controversial()).display(_env)
+        
+        // Test popular feed
+        _env.out.print("\nPopular Posts Across All Subreddits:")
+        get_popular_feed().display(_env, 10)  // Show top 10 posts
+      end
+
       // 4. Print initial user profiles
       _env.out.print("\n=== Initial User Profiles ===")
       try
@@ -366,3 +432,102 @@ class RedditEngine
         " [Score: " + comment.get_score().string() + "]")
       print_comment_tree(comment.get_replies(), indent + "  ")
     end
+
+  fun ref show_user_messages(username: String) =>
+    """
+    Display all messages for a user
+    """
+    try
+      let user = users(username)?
+      user.get_messages(_env)
+    end
+
+  fun ref show_message_thread(username: String, thread_id: String val) =>
+    try
+      let user = users(username)?
+      user.get_message_thread(_env, thread_id)
+    end
+
+  fun ref send_direct_message(from_username: String, to_username: String, 
+    content: String, thread_id: String val = "") =>
+    try
+      let sender = users(from_username)?
+      let recipient = users(to_username)?
+      
+      _env.out.print(from_username + " sending message to " + to_username)
+      
+      let message_id: String val = (Time.now()._1.string() + "_" + from_username).clone().string()
+      let actual_thread_id: String val = if thread_id == "" then 
+        message_id 
+      else 
+        thread_id
+      end
+      
+      let message = Message(
+        from_username.clone().string(),
+        to_username.clone().string(),
+        content.clone().string(),
+        message_id,
+        actual_thread_id
+      )
+      
+      sender.send_message(to_username.clone().string(), content.clone().string(), actual_thread_id)
+      recipient.receive_message(message)
+    else
+      _env.out.print("Error: Could not send message")
+    end
+
+
+  fun ref generate_subreddit_feed(subreddit_name: String, sort_type: U8 = SortType.hot()): PostFeed? =>
+    """
+    Generate a feed for a specific subreddit
+    """
+    try
+      let subreddit = subreddits(subreddit_name)?
+      let feed = PostFeed(_env)
+      for post in subreddit.get_posts().values() do
+        feed.add_post(post)
+      end
+      feed.sort_by(sort_type)
+      feed
+    else
+      error
+    end
+
+fun ref test_feeds() =>
+    try
+      var user_iter = users.keys()
+      let test_user = user_iter.next()?
+      
+      _env.out.print("\n=== Testing Feed Generation ===")
+      
+      // Test user's personal feed
+      _env.out.print("\nUser's Personal Feed (Hot):")
+      let user_feed = get_user_feed(test_user)
+      user_feed.display(_env)
+      
+      // Test popular feed with different sorts
+      _env.out.print("\nPopular Feed (Top):")
+      let popular_feed = get_popular_feed(SortType.top())
+      popular_feed.display(_env)
+      
+      _env.out.print("\nPopular Feed (Controversial):")
+      let controversial_feed = get_popular_feed(SortType.controversial())
+      controversial_feed.display(_env)
+      
+      // Test subreddit feed
+      _env.out.print("\nProgramming Subreddit Feed (New):")
+      try
+        let subreddit_feed = get_subreddit_feed("programming", SortType.new_p())?
+        subreddit_feed.display(_env)
+      end
+    end
+
+  fun ref get_user_feed(username: String, sort_type: U8 = SortType.hot()): PostFeed =>
+    _feed_generator.generate_user_feed(subreddits, username, sort_type)
+
+  fun ref get_popular_feed(sort_type: U8 = SortType.hot()): PostFeed =>
+    _feed_generator.generate_popular_feed(subreddits, sort_type)
+
+  fun ref get_subreddit_feed(subreddit_name: String, sort_type: U8 = SortType.hot()): PostFeed? =>
+    _feed_generator.generate_subreddit_feed(subreddits, subreddit_name, sort_type)?
