@@ -66,12 +66,18 @@ actor User
   let _env: Env
   var _post_karma: I64
   var _comment_karma: I64
+  let _inbox: Array[Message] ref
+  let _sent: Array[Message] ref
+  let _message_threads: Map[String, Array[Message] ref] ref // thread_id -> messages
   
   new create(env: Env, username: String, bio: String = "") =>
     _env = env
     _profile = UserProfile(username, bio)
     _post_karma = 0
     _comment_karma = 0
+    _inbox = Array[Message]
+    _sent = Array[Message]
+    _message_threads = Map[String, Array[Message] ref]
 
   be print_name(env: Env) =>
     env.out.print(_profile.username)
@@ -121,6 +127,65 @@ actor User
 
   fun get_total_karma(): I64 =>
     _post_karma + _comment_karma
+
+  be reply_to_message(thread_id: String, content: String) =>
+    try
+      let thread = _message_threads(thread_id)?
+      if thread.size() > 0 then
+        let original = thread(0)?
+        let recipient = original.sender
+        let message_id = _generate_message_id()
+        let reply = Message(_profile.username, recipient, content, message_id, thread_id)
+        thread.push(reply)
+        _sent.push(reply)
+      end
+    end
+
+  be get_messages(env: Env) =>
+    env.out.print("\nInbox for " + _profile.username + ":")
+    for message in _inbox.values() do
+      env.out.print("From: " + message.sender + 
+        " | Timestamp: " + message.timestamp.string() +
+        "\nContent: " + message.content)
+    end
+
+  be get_message_thread(env: Env, thread_id: String) =>
+    try
+      let thread = _message_threads(thread_id)?
+      env.out.print("\nMessage Thread " + thread_id + ":")
+      for message in thread.values() do
+        env.out.print("From: " + message.sender + 
+          " | To: " + message.recipient +
+          " | Timestamp: " + message.timestamp.string() +
+          "\nContent: " + message.content)
+      end
+    end
+
+  be send_message(recipient: String val, content: String val, thread_id: String val = "") =>
+    let message_id: String val = _generate_message_id()
+    let actual_thread_id: String val = if thread_id == "" then message_id else thread_id end
+    
+    let message = Message(_profile.username, recipient, content, message_id, actual_thread_id)
+    _sent.push(message)
+    
+    try
+      if not _message_threads.contains(actual_thread_id) then
+        _message_threads(actual_thread_id) = Array[Message]
+      end
+      _message_threads(actual_thread_id)?.push(message)
+    end
+
+  be receive_message(message: Message val) =>
+    _inbox.push(message)
+    try
+      if not _message_threads.contains(message.thread_id) then
+        _message_threads(message.thread_id) = Array[Message]
+      end
+      _message_threads(message.thread_id)?.push(message)
+    end
+
+  fun _generate_message_id(): String =>
+    Time.now()._1.string() + "_" + _profile.username
 
   fun ref check_achievements() =>
     if _post_karma > 1000 then
