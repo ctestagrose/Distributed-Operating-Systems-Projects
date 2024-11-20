@@ -20,10 +20,10 @@ actor RedditClient is ClientNotify
       )
       _conn = conn
 
-    
   be connected() =>
     _env.out.print("Connected to Reddit server")
     try_login()
+
     
   be received(data: Array[U8] val) =>
     try
@@ -56,6 +56,24 @@ actor RedditClient is ClientNotify
       | "SUBREDDIT_LIST" =>
         display_subreddits(consume parts)
         display_menu()
+      | "JOIN_OK" =>
+        try
+          let subreddit = parts(1)?
+          _env.out.print("Successfully joined subreddit: " + subreddit)
+        end
+        display_menu()
+      | "LEAVE_OK" =>
+        try
+          let subreddit = parts(1)?
+          _env.out.print("Successfully left subreddit: " + subreddit)
+        end
+        display_menu()
+      | "MESSAGES" =>
+        display_messages(consume parts)
+        display_menu()
+      | "MESSAGE_SENT" =>
+        _env.out.print("Message sent successfully!")
+        display_menu()
       else
         _env.out.print("Received unknown response: " + message)
         display_menu()
@@ -82,11 +100,18 @@ actor RedditClient is ClientNotify
     _env.out.print("\n=== Reddit Menu ===")
     _env.out.print("1. Create Subreddit")
     _env.out.print("2. Create Post")
-    _env.out.print("3. List Posts")
+    _env.out.print("3. List All Posts")
     _env.out.print("4. Add Comment")
     _env.out.print("5. View Comments")
-    _env.out.print("6. List Subreddits")
-    _env.out.print("7. Exit")
+    _env.out.print("6. List All Subreddits")
+    _env.out.print("7. List My Subreddits")
+    _env.out.print("8. View My Feed")
+    _env.out.print("9. Join Subreddit")
+    _env.out.print("10. Leave Subreddit")
+    _env.out.print("11. View Messages")
+    _env.out.print("12. Send Message")
+    _env.out.print("13. Reply to Message")
+    _env.out.print("14. Exit")
     _env.out.print("\nEnter your choice:")
     
     _env.input(recover MenuInputNotify(this) end)
@@ -99,10 +124,62 @@ actor RedditClient is ClientNotify
     | "4" => add_comment()
     | "5" => view_comments()
     | "6" => list_subreddits()
-    | "7" => _env.exitcode(0)
+    | "7" => list_joined_subreddits()
+    | "8" => list_feed()
+    | "9" => join_subreddit()
+    | "10" => leave_subreddit()
+    | "11" => view_messages()
+    | "12" => send_message()
+    | "13" => reply_to_message()
+    | "14" => _env.exitcode(0)
     else
       _env.out.print("Invalid choice")
       display_menu()
+    end
+
+  fun ref send_message() =>
+    prompt("Enter recipient username:")
+    get_input(recover SendMessageInputNotify(this) end)
+
+  fun ref reply_to_message() =>
+    prompt("Enter message ID to reply to:")
+    get_input(recover ReplyMessageInputNotify(this) end)
+
+  fun ref display_messages(parts: Array[String] val) =>
+    _env.out.print("\n=== Your Messages ===")
+    try
+      var i: USize = 1
+      while i < parts.size() do
+        if parts(i)? == "###MSG###" then
+          let sender = parts(i + 1)?
+          let content = recover val parts(i + 2)?.clone().>replace("_", " ") end
+          let timestamp = parts(i + 3)?
+          _env.out.print("\nFrom: " + sender)
+          _env.out.print("Content: " + content)
+          _env.out.print("Sent at: " + timestamp)
+          _env.out.print("---")
+          i = i + 4
+        else
+          i = i + 1
+        end
+      end
+      if i == 1 then
+        _env.out.print("No messages.")
+      end
+    end
+
+  be send_message_with_data(recipient: String val, content: String val) =>
+    match _conn
+    | let conn: TCPConnection tag =>
+      let encoded_content = recover val content.clone().>replace(" ", "_") end
+      conn.write("SEND_MESSAGE " + recipient + " " + consume encoded_content)
+    end
+
+  be reply_message_with_data(message_id: String val, content: String val) =>
+    match _conn
+    | let conn: TCPConnection tag =>
+      let encoded_content = recover val content.clone().>replace(" ", "_") end
+      conn.write("REPLY_MESSAGE " + message_id + " " + consume encoded_content)
     end
 
   fun ref display_posts(parts: Array[String] val) =>
@@ -133,12 +210,16 @@ actor RedditClient is ClientNotify
     try
       var i: USize = 1
       while i < parts.size() do
-        let author = parts(i)?
-        let content = parts(i + 1)?
-        _env.out.print("\nAuthor: " + author)
-        _env.out.print("Comment: " + content)
-        _env.out.print("---")
-        i = i + 2
+        if parts(i)? == "###COMMENT###" then
+          let author = parts(i + 1)?
+          let content_str = recover val parts(i + 2)?.clone().>replace("_", " ") end
+          _env.out.print("\nAuthor: " + author)
+          _env.out.print("Content: " + content_str)
+          _env.out.print("---")
+          i = i + 3
+        else
+          i = i + 1
+        end
       end
     end
 
@@ -156,6 +237,12 @@ actor RedditClient is ClientNotify
     match _conn
     | let conn: TCPConnection tag =>
       conn.write("LIST_POSTS")
+    end
+
+  fun ref view_messages() =>
+    match _conn
+    | let conn: TCPConnection tag =>
+      conn.write("VIEW_MESSAGES")
     end
 
   fun ref add_comment() =>
@@ -220,6 +307,39 @@ actor RedditClient is ClientNotify
       end
     end
 
+  fun ref join_subreddit() =>
+  prompt("Enter subreddit name to join:")
+  get_input(recover JoinSubredditInputNotify(this) end)
+
+  fun ref leave_subreddit() =>
+    prompt("Enter subreddit name to leave:")
+    get_input(recover LeaveSubredditInputNotify(this) end)
+
+  be join_subreddit_with_data(subreddit_name: String val) =>
+  match _conn
+  | let conn: TCPConnection tag =>
+    conn.write("JOIN_SUBREDDIT " + subreddit_name)
+  end
+
+  be leave_subreddit_with_data(subreddit_name: String val) =>
+    match _conn
+    | let conn: TCPConnection tag =>
+      conn.write("LEAVE_SUBREDDIT " + subreddit_name)
+    end
+
+  fun ref list_joined_subreddits() =>
+    match _conn
+    | let conn: TCPConnection tag =>
+      conn.write("LIST_JOINED_SUBREDDITS")
+    end
+
+  fun ref list_feed() =>
+    match _conn
+    | let conn: TCPConnection tag =>
+      conn.write("LIST_FEED")
+    end
+
+
 class CommentInputNotify is InputNotify
   let _client: RedditClient
   var _stage: USize = 0
@@ -279,20 +399,6 @@ class ViewCommentsInputNotify is InputNotify
   fun ref dispose() =>
     None
 
-class MenuInputNotify is InputNotify
-  let _client: RedditClient
-  
-  new iso create(client: RedditClient) =>
-    _client = client
-
-  fun ref apply(data: Array[U8] iso) =>
-    let input = recover val String.from_array(consume data).>trim() end
-    _client.handle_menu_choice(input)
-
-  fun ref dispose() =>
-    None
-
-
 class CreatePostInputNotify is InputNotify
   let _client: RedditClient
   var _stage: USize = 0
@@ -338,6 +444,86 @@ class CreateSubredditInputNotify is InputNotify
   fun ref dispose() =>
     None
 
+class JoinSubredditInputNotify is InputNotify
+  let _client: RedditClient
+  
+  new iso create(client: RedditClient) =>
+    _client = client
+
+  fun ref apply(data: Array[U8] iso) =>
+    let input = recover val String.from_array(consume data).>trim() end
+    _client.join_subreddit_with_data(input)
+
+  fun ref dispose() =>
+    None
+
+class LeaveSubredditInputNotify is InputNotify
+  let _client: RedditClient
+  
+  new iso create(client: RedditClient) =>
+    _client = client
+
+  fun ref apply(data: Array[U8] iso) =>
+    let input = recover val String.from_array(consume data).>trim() end
+    _client.leave_subreddit_with_data(input)
+
+  fun ref dispose() =>
+    None
+
+class SendMessageInputNotify is InputNotify
+  let _client: RedditClient
+  var _stage: USize = 0
+  var _recipient: String val = ""
+  
+  new iso create(client: RedditClient) =>
+    _client = client
+
+  new iso from_state(client: RedditClient, stage': USize, recipient': String val = "") =>
+    _client = client
+    _stage = stage'
+    _recipient = recipient'
+
+  fun ref apply(data: Array[U8] iso) =>
+    let input = recover val String.from_array(consume data).>trim() end
+    
+    match _stage
+    | 0 =>
+      _client.prompt("Enter message content:")
+      _client.get_input(recover iso SendMessageInputNotify.from_state(_client, 1, input) end)
+    | 1 =>
+      _client.send_message_with_data(_recipient, input)
+    end
+
+  fun ref dispose() =>
+    None
+
+class ReplyMessageInputNotify is InputNotify
+  let _client: RedditClient
+  var _stage: USize = 0
+  var _message_id: String val = ""
+  
+  new iso create(client: RedditClient) =>
+    _client = client
+
+  new iso from_state(client: RedditClient, stage': USize, message_id': String val = "") =>
+    _client = client
+    _stage = stage'
+    _message_id = message_id'
+
+  fun ref apply(data: Array[U8] iso) =>
+    let input = recover val String.from_array(consume data).>trim() end
+    
+    match _stage
+    | 0 =>
+      _client.prompt("Enter reply content:")
+      _client.get_input(recover iso ReplyMessageInputNotify.from_state(_client, 1, input) end)
+    | 1 =>
+      _client.reply_message_with_data(_message_id, input)
+    end
+
+  fun ref dispose() =>
+    None
+
 class LineReaderNotify is InputNotify
   let _input_handler: InputNotify iso
   let _buffer: Array[U8]
@@ -349,7 +535,6 @@ class LineReaderNotify is InputNotify
   fun ref apply(data: Array[U8] iso) =>
     for byte in (consume data).values() do
       if byte == 10 then // newline character
-        // Send accumulated buffer to handler
         let line = recover iso Array[U8] end
         for b in _buffer.values() do
           line.push(b)
@@ -364,5 +549,28 @@ class LineReaderNotify is InputNotify
   fun ref dispose() =>
     _input_handler.dispose()
 
-  fun ref fun_stdin() =>
+class MenuInputNotify is InputNotify
+  let _client: RedditClient
+  let _buffer: String ref
+  
+  new iso create(client: RedditClient) =>
+    _client = client
+    _buffer = String
+
+  fun ref apply(data: Array[U8] iso) =>
+    let input = String.from_array(consume data)
+    for c in input.values() do
+      if (c == 10) or (c == 13) then // Newline or carriage return
+        let choice = _buffer.clone().>trim()
+        if choice != "" then
+          _client.handle_menu_choice(choice)
+        end
+        _buffer.clear()
+      else
+        _buffer.push(c)
+      end
+    end
+
+
+  fun ref dispose() =>
     None

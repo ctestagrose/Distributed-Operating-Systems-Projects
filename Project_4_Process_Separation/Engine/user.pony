@@ -1,6 +1,7 @@
 use "collections"
 use "random"
 use "time"
+use "net"
 
 class UserProfile
   let username: String
@@ -160,6 +161,22 @@ actor User
           "\nContent: " + message.content)
       end
     end
+  
+  be get_messages_for_client(conn: TCPConnection tag) =>
+      """
+      Send messages formatted for client response
+      """
+      let response = recover iso String end
+      response.append("MESSAGES")
+      
+      for message in _inbox.values() do
+        response.append(" ###MSG###")
+        response.append(" " + message.sender)
+        response.append(" " + message.content.clone().>replace(" ", "_"))
+        response.append(" " + message.timestamp.string())
+      end
+      
+      conn.write(consume response)
 
   be send_message(recipient: String val, content: String val, thread_id: String val = "") =>
     let message_id: String val = _generate_message_id()
