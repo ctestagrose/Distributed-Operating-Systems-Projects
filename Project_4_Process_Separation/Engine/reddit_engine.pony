@@ -19,208 +19,60 @@ class RedditEngine
     _feed_generator = Feed(env)
 
 
-  fun ref run(num_users: U64) =>
-    _env.out.print("Welcome to the Reddit Engine Simulator!")
+fun ref run(num_users: U64) =>
+    _env.out.print("Starting Reddit Engine Simulation with " + num_users.string())
     
-    // 1. Create users with bios
-    for i in Range[USize](0, num_users.usize()) do
-      let random_name = generate_random_string()
-      let bio: String = "I'm user " + random_name + " and I love Reddit!"
-      register_user(random_name, bio)
-      _env.out.print("Registered new user: " + random_name)
+    // Initialize common subreddits
+    let default_subreddits = [
+      "programming"
+      "news"
+      "funny" 
+      "science"
+      "gaming"
+      "movies"
+      "music" 
+      "books"
+      "technology"
+      "sports"
+      "cats"
+      "pics"
+    ]
+    
+    // Create default subreddits
+    for name in default_subreddits.values() do
+      create_subreddit(name)
+      _env.out.print("Created subreddit: " + name)
     end
-    _env.out.print("\nAll registered users: " + ",".join(users.keys()))
-
-    try
-      // 2. Get our test users
-      var user_iter = users.keys()
-      let creator = user_iter.next()?    
-      let poster = user_iter.next()?     
-      let commenter = user_iter.next()?  
+    
+    // Create initial set of users (smaller number to start)
+    let initial_users = num_users.usize().min(100) // Start with max 100 users
+    for user_idx in Range[USize](0, initial_users) do
+      let new_username = generate_random_string()
+      let bio = recover val "Redditor since " + Time.now()._1.string() end
+      register_user(new_username, consume bio)
       
-      // Create multiple subreddits to test karma tracking across communities
-      let subreddits_to_create: Array[String] = ["programming"; "news"; "funny"]
+      // Each initial user joins 2-4 random subreddits
+      let num_subs_to_join = _random.int(3).usize() + 2 // 2-4 subreddits
+      var joined = Set[USize] // Track which subreddits we've joined
       
-      // 3. Create and populate multiple subreddits to test karma tracking
-      for subreddit_name in subreddits_to_create.values() do
-        _env.out.print("\n=== Testing " + subreddit_name + " Subreddit ===")
-        
-        // Create subreddit
-        _env.out.print("\nCreating subreddit: " + subreddit_name)
-        create_subreddit(subreddit_name)
-        
-        // Have all users join
-        join_subreddit(creator, subreddit_name)
-        join_subreddit(poster, subreddit_name)
-        join_subreddit(commenter, subreddit_name)
-        
-        // Create some posts
-        create_post(creator, subreddit_name, "Welcome to " + subreddit_name, "First post!")
-        create_post(poster, subreddit_name, "Question about " + subreddit_name, "What do you think?")
-        
-        // Add comments
-        add_comment(commenter, subreddit_name, 0, "Great subreddit!")
-        add_comment(poster, subreddit_name, 0, "Thanks for creating this!")
-        add_comment(creator, subreddit_name, 1, "Interesting question!")
-        
-        // Test voting to generate karma
-        vote_on_post(commenter, subreddit_name, 0, true)
-        vote_on_post(poster, subreddit_name, 0, true)
-        vote_on_post(creator, subreddit_name, 1, true)
-        
-        vote_on_comment(creator, subreddit_name, 0, 0, true)
-        vote_on_comment(poster, subreddit_name, 0, 0, true)
-
-        // Reply to first comment
-        let first_comment = Array[USize]
-        first_comment.push(0)  // Index of first comment
-        add_nested_comment(creator, subreddit_name, 0, first_comment, "Reply to first comment!")
-        
-        // Reply to second comment
-        let second_comment = Array[USize]
-        second_comment.push(1)  // Index of second comment
-        add_nested_comment(poster, subreddit_name, 0, second_comment, "Reply to second comment!")
-        
-        // Add nested reply (reply to a reply)
-        let nested_reply = Array[USize]
-        nested_reply.push(0)  // First comment
-        nested_reply.push(0)  // First reply to first comment
-        add_nested_comment(commenter, subreddit_name, 0, nested_reply, "This is a nested reply!")
-        
-        // 7. Test voting on comments
-        _env.out.print("\n=== Testing Comment Voting ===")
-        // Vote on top-level comment
-        vote_on_comment(creator, subreddit_name, 0, 0, true)  // Upvote first comment
-        vote_on_comment(poster, subreddit_name, 0, 1, true)   // Upvote second comment
-        
-        // 8. Display the results
-        _env.out.print("\n=== Final Post State ===")
-        print_subreddit_posts(subreddit_name)
-
+      for i in Range(0, num_subs_to_join) do
+        try
+          var sub_idx = _random.int(default_subreddits.size().u64()).usize()
+          while joined.contains(sub_idx) do
+            sub_idx = _random.int(default_subreddits.size().u64()).usize()
+          end
+          joined.set(sub_idx)
+          join_subreddit(new_username, default_subreddits(sub_idx)?)
+        end
       end
-
-      // Test Direct Messaging System
-      _env.out.print("\n=== Testing Direct Messaging System ===")
-      
-      // Test simple messages between users
-      _env.out.print("\nTest 1: Basic Direct Messages")
-      send_direct_message(creator, poster, "Hey, I loved your posts in the programming subreddit!")
-      send_direct_message(poster, creator, "Thanks! I'm enjoying the community.")
-      send_direct_message(commenter, creator, "Great job moderating the subreddits!")
-      
-      // Show messages for each user
-      _env.out.print("\nShowing messages for all users:")
-      show_user_messages(creator)
-      show_user_messages(poster)
-      show_user_messages(commenter)
-      
-      // Test message threading
-      _env.out.print("\nTest 2: Message Threading")
-      let thread_id: String val = (Time.now()._1.string() + "_" + creator).clone().string()
-      send_direct_message(creator, commenter, "Want to be a moderator for r/programming?", thread_id.clone())
-      send_direct_message(commenter, creator, "I'd love to! What are the responsibilities?", thread_id.clone())
-      send_direct_message(creator, commenter, "Help manage posts and enforce rules.", thread_id.clone())
-      send_direct_message(commenter, creator, "Sounds good, count me in!", thread_id.clone())
-      
-      // Show the full conversation thread
-      _env.out.print("\nShowing full moderator discussion thread:")
-      show_message_thread(creator, thread_id.clone())
-      
-      // Test multiple concurrent conversations
-      _env.out.print("\nTest 3: Multiple Concurrent Conversations")
-      let thread_2: String val = (Time.now()._1.string() + "_" + poster).clone().string()
-      send_direct_message(poster, creator, "Can you help me with a technical question?", thread_2.clone())
-      send_direct_message(poster, commenter, "Saw your helpful comments!")
-      send_direct_message(creator, poster, "Sure, what's your question?", thread_2.clone())
-      
-      _env.out.print("\nFinal message status for all users:")
-      show_user_messages(creator)
-      show_user_messages(poster)
-      show_user_messages(commenter)
-      
-      _env.out.print("\n=== Direct Messaging Test Complete ===")
-      
-
-      _env.out.print("\n=== Testing Feed Generation ===")
-      try
-        let active_user = users.keys().next()?
-        
-        // Show user feed with different sorts
-        _env.out.print("\nUser Feed - Hot:")
-        get_user_feed(active_user, SortType.hot()).display(_env)
-        
-        _env.out.print("\nUser Feed - New:")
-        get_user_feed(active_user, SortType.new_p()).display(_env)
-        
-        _env.out.print("\nUser Feed - Top:")
-        get_user_feed(active_user, SortType.top()).display(_env)
-        
-        _env.out.print("\nUser Feed - Controversial:")
-        get_user_feed(active_user, SortType.controversial()).display(_env)
-        
-        // Test popular feed
-        _env.out.print("\nPopular Posts Across All Subreddits:")
-        get_popular_feed().display(_env, 10)  // Show top 10 posts
-      end
-
-      // 4. Print initial user profiles
-      _env.out.print("\n=== Initial User Profiles ===")
-      try
-        let creator_user = users(creator)?
-        let poster_user = users(poster)?
-        let commenter_user = users(commenter)?
-        
-        creator_user.print_profile(_env)
-        poster_user.print_profile(_env)
-        commenter_user.print_profile(_env)
-      end
-      
-      // 5. Additional activity to test achievement tracking
-      let active_subreddit = "programming"
-      
-      // Add more posts to trigger achievements
-      for i in Range(0, 8) do  // This plus earlier posts should trigger Prolific Poster
-        create_post(creator, active_subreddit, 
-          "Achievement Test Post " + i.string(), "Content " + i.string())
-      end
-      
-      // Add more comments to trigger achievements
-      for i in Range(0, 47) do  // This plus earlier comments should trigger Discussion Master
-        add_comment(commenter, active_subreddit, 0, 
-          "Working towards Discussion Master " + i.string())
-      end
-      
-      // Generate karma to trigger achievements
-      for i in Range(0, 100) do  // Generate significant karma
-          let post_index = (i % 3).usize()
-          vote_on_post(poster, active_subreddit, post_index, true)
-          vote_on_comment(creator, active_subreddit, 0, 0, true)
-      end
-      
-      // 6. Print final user profiles showing achievements
-      _env.out.print("\n=== Final User Profiles with Achievements ===")
-      try
-        let creator_user = users(creator)?
-        let poster_user = users(poster)?
-        let commenter_user = users(commenter)?
-        
-        creator_user.print_profile(_env)
-        poster_user.print_profile(_env)
-        commenter_user.print_profile(_env)
-      end
-      
-      // 7. Test profile updates after leaving
-      _env.out.print("\n=== Testing Profile Updates After Leaving ===")
-      leave_subreddit(commenter, active_subreddit)
-      
-      try
-        let commenter_user = users(commenter)?
-        commenter_user.print_profile(_env)
-      end
-      
-    else
-      _env.out.print("Error: Need at least 3 users to test all functionality")
     end
+    
+    _env.out.print("\nSimulation initialization complete!")
+    _env.out.print("Created " + initial_users.string() + " initial users")
+    _env.out.print("Use the simulation timer to generate ongoing activity.")
+    
+    _env.out.print("\nSimulation initialization complete!")
+    _env.out.print("Use the simulation timer to generate ongoing activity.")
 
 
 
@@ -531,3 +383,45 @@ fun ref test_feeds() =>
 
   fun ref get_subreddit_feed(subreddit_name: String, sort_type: U8 = SortType.hot()): PostFeed? =>
     _feed_generator.generate_subreddit_feed(subreddits, subreddit_name, sort_type)?
+
+
+primitive ZipfDistribution
+  fun apply(rank: USize, total_items: USize, s: F64 = 1.0): F64 =>
+    let rank_f = rank.f64()
+    let harmonic = _harmonic_number(total_items, s)
+    (1.0 / (rank_f.pow(s))) / harmonic
+
+  fun _harmonic_number(n: USize, s: F64): F64 =>
+    var sum: F64 = 0
+    for n_idx in Range(1, n + 1) do
+      sum = sum + (1.0 / n_idx.f64().pow(s))
+    end
+    sum
+
+  fun distribute_users(num_users: USize, num_subreddits: USize, s: F64 = 1.0, 
+    rand: Random): Array[USize] =>
+    let distribution = Array[USize].init(0, num_subreddits)
+    
+    // Calculate probabilities for each rank
+    let probabilities = Array[F64].init(0, num_subreddits)
+    for rank in Range(1, num_subreddits + 1) do
+      probabilities.push(apply(rank, num_subreddits, s))
+    end
+    
+    // Assign users based on probabilities
+    for user_num in Range(0, num_users) do
+      var random_value = rand.real()
+      var cumulative: F64 = 0
+      
+      for prob_idx in Range(0, num_subreddits) do
+        try
+          cumulative = cumulative + probabilities(prob_idx)?
+          if random_value <= cumulative then
+            try distribution(prob_idx)? = distribution(prob_idx)? + 1 end
+            break
+          end
+        end
+      end
+    end
+    
+    distribution

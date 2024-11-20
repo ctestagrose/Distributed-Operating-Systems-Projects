@@ -39,8 +39,8 @@ actor RedditServer is ServerNotify
 
     let timers = Timers
     let timer = Timer(SimulationUpdate(this),
-      5_000_000_000, // 5 seconds
-      5_000_000_000) // 5 seconds between updates
+      1_000_000_000, // 5 seconds
+      1_000_000_000) // 5 seconds between updates
     timers(consume timer)
     
   be connected(conn: TCPConnection tag) =>
@@ -123,9 +123,70 @@ actor RedditServer is ServerNotify
             let username = _get_username(conn)?
             let subreddit_name = _decode_text(parts(1)?)
             _engine.create_subreddit(subreddit_name)
-            _engine.join_subreddit(username, subreddit_name)
+            _engine.join_subreddit(username, subreddit_name) // Already here but confirming
             conn.write("SUBREDDIT_OK " + subreddit_name)
-            _env.out.print("Subreddit created: " + subreddit_name + " by " + username)
+            _env.out.print("Subreddit created and joined: " + subreddit_name + " by " + username)
+          end
+        end
+      | "JOIN_SUBREDDIT" =>
+        if parts.size() >= 2 then
+          try
+            let username = _get_username(conn)?
+            let subreddit_name = parts(1)?
+            _engine.join_subreddit(username, subreddit_name)
+            conn.write("JOIN_OK " + subreddit_name)
+          end
+        end
+      | "LEAVE_SUBREDDIT" =>
+        if parts.size() >= 2 then
+          try
+            let username = _get_username(conn)?
+            let subreddit_name = parts(1)?
+            _engine.leave_subreddit(username, subreddit_name)
+            conn.write("LEAVE_OK " + subreddit_name)
+          end
+        end
+      | "VIEW_MESSAGES" =>
+        try
+          let username = _get_username(conn)?
+          let user = _engine.users(username)?
+          user.get_messages_for_client(conn)
+          _env.out.print("Requesting messages for: " + username)
+        end
+      | "LIST_JOINED_SUBREDDITS" =>
+        try
+          let username = _get_username(conn)?
+          let response = build_joined_subreddits_response(username)
+          conn.write(response)
+        end
+
+      | "LIST_FEED" =>
+        try
+          let username = _get_username(conn)?
+          let response = build_feed_response(username)
+          conn.write(response)
+        end
+
+      | "SEND_MESSAGE" =>
+        if parts.size() >= 3 then
+          try
+            let sender = _get_username(conn)?
+            let recipient = parts(1)?
+            let content = _decode_text(parts(2)?)
+            _engine.send_direct_message(sender, recipient, content)
+            conn.write("MESSAGE_SENT")
+          end
+        end
+
+      | "REPLY_MESSAGE" =>
+        if parts.size() >= 3 then
+          try
+            let username = _get_username(conn)?
+            let message_id = parts(1)?
+            let content = _decode_text(parts(2)?)
+            let user = _engine.users(username)?
+            user.reply_to_message(message_id, content)
+            conn.write("MESSAGE_SENT")
           end
         end
       end
@@ -143,8 +204,9 @@ actor RedditServer is ServerNotify
       let comments = post.get_comments()
 
       for comment in comments.values() do
+        response.append(" ###COMMENT###")
         response.append(" " + comment.get_author())
-        response.append(" " + comment.get_content())
+        response.append(" " + comment.get_content().clone().>replace(" ", "_"))
       end
       
       consume response
@@ -202,40 +264,149 @@ actor RedditServer is ServerNotify
       
     consume response
 
-  be simulate_activity() =>
-    try
-      // Get random users for activity
-      let users = _engine.users.keys()
-      let random_user = users.next()?
-      let another_user = users.next()?
-      
-      // Simulate random activities
-      match _rand.int(5)
-      | 0 => // Create a post
-        let title = recover val "Simulated Post " + Time.now()._1.string() end
-        let content = recover val "This is simulated content created at " + Time.now()._1.string() end
-        _engine.create_post(random_user, "programming", consume title, consume content)
-        _env.out.print("Simulation: " + random_user + " created a post")
-        
-      | 1 => // Add a comment
-        let comment = recover val "Simulated comment at " + Time.now()._1.string() end
-        _engine.add_comment(random_user, "programming", 0, consume comment)
-        _env.out.print("Simulation: " + random_user + " added a comment")
-        
-      | 2 => // Vote on something
-        _engine.vote_on_post(random_user, "programming", 0, true)
-        _env.out.print("Simulation: " + random_user + " voted on a post")
-        
-      | 3 => // Send a message
-        let message = recover val "Simulated message at " + Time.now()._1.string() end
-        _engine.send_direct_message(random_user, another_user, consume message)
-        _env.out.print("Simulation: " + random_user + " sent a message to " + another_user)
-        
-      | 4 => // Create a new subreddit
-        let subreddit_name = recover val "SimulatedSubreddit" + Time.now()._1.string() end
-        let subreddit_val = subreddit_name.clone()
-        _engine.create_subreddit(consume subreddit_val)
-        _engine.join_subreddit(random_user, consume subreddit_name)
-        _env.out.print("Simulation: " + random_user + " created a new subreddit")
+  fun ref build_joined_subreddits_response(username: String): String =>
+    let response = recover iso String end
+    response.append("SUBREDDIT_LIST")
+    
+    for (name, subreddit) in _engine.subreddits.pairs() do
+      if subreddit.get_members().contains(username) then
+        response.append(" " + name)
       end
     end
+    
+    consume response
+
+  fun ref build_feed_response(username: String): String =>
+    let response = recover iso String end
+    response.append("POST_LIST")
+    
+    for (name, subreddit) in _engine.subreddits.pairs() do
+      if subreddit.get_members().contains(username) then
+        var post_count: USize = 0
+        for post in subreddit.get_posts().values() do
+          if post_count >= 10 then break end // Limit to 10 posts per subreddit
+          response.append(" ###POST###")
+          response.append(" " + post.title.clone().>replace(" ", "_"))
+          response.append(" " + post.author)
+          response.append(" " + post.content.clone().>replace(" ", "_"))
+          response.append(" " + name) // Include subreddit name
+          post_count = post_count + 1
+        end
+      end
+    end
+    
+    consume response
+
+be simulate_activity() =>
+  try
+    // Create arrays of users and subreddits for random selection
+    let user_array = Array[String]
+    for username in _engine.users.keys() do
+      user_array.push(username)
+    end
+
+    if user_array.size() > 0 then
+      let user_idx = _rand.int(user_array.size().u64()).usize()
+      let another_idx = _rand.int(user_array.size().u64()).usize()
+      
+      let random_user = user_array(user_idx)?
+      let another_user = if user_idx == another_idx then
+        try
+          user_array((user_idx + 1) % user_array.size())?
+        else
+          random_user
+        end
+      else
+        user_array(another_idx)?
+      end
+
+      let user_subreddits = Array[String]
+      for (name, subreddit) in _engine.subreddits.pairs() do
+        if subreddit.get_members().contains(random_user) then
+          user_subreddits.push(name)
+        end
+      end
+
+      if user_subreddits.size() > 0 then
+        let subreddit_idx = _rand.int(user_subreddits.size().u64()).usize()
+        try
+          let active_subreddit = user_subreddits(subreddit_idx)?
+          let subreddit = _engine.subreddits(active_subreddit)?
+
+          match _rand.real()
+          | let x: F64 if x < 0.4 =>
+            // Create post
+            let title = recover val "Post about " + active_subreddit + " " + Time.now()._1.string() end
+            let content = recover val "Sharing thoughts about " + active_subreddit end
+            _engine.create_post(random_user, active_subreddit, consume title, consume content)
+            _env.out.print("Simulation: " + random_user + " created a post in " + active_subreddit)
+          | let x: F64 if x < 0.7 =>
+            // Interact with existing posts
+            let posts = subreddit.get_posts()
+            if posts.size() > 0 then
+              let post_idx = _rand.int(posts.size().u64()).usize()
+              try 
+                match _rand.real()
+                | let y: F64 if y < 0.4 =>
+                  let comment = recover val "Commenting about post #" + post_idx.string() end
+                  _engine.add_comment(random_user, active_subreddit, post_idx, consume comment)
+                  _env.out.print("Simulation: " + random_user + " commented on post " + post_idx.string() + " in " + active_subreddit)
+                | let y: F64 if y < 0.8 =>
+                  let is_upvote = _rand.real() < 0.7
+                  _engine.vote_on_post(random_user, active_subreddit, post_idx, is_upvote)
+                  _env.out.print("Simulation: " + random_user + 
+                    (if is_upvote then " upvoted " else " downvoted " end) + 
+                    "post " + post_idx.string() + " in " + active_subreddit)
+                else
+                  let post = posts(post_idx)?
+                  if post.author != random_user then
+                    let message = recover val "About post #" + post_idx.string() + " in " + active_subreddit end
+                    _engine.send_direct_message(random_user, post.author, consume message)
+                    _env.out.print("Simulation: " + random_user + " messaged " + post.author + " about post " + post_idx.string())
+                  end
+                end
+              end
+            end
+          else
+            // Join/leave activity
+            if _rand.real() < 0.8 then // 80% chance to join vs leave
+              if not subreddit.get_members().contains(random_user) then
+                _engine.join_subreddit(random_user, active_subreddit)
+                _env.out.print("Simulation: " + random_user + " joined " + active_subreddit)
+              end
+            else
+              if subreddit.get_members().size() > 1 then
+                _engine.leave_subreddit(random_user, active_subreddit)
+                _env.out.print("Simulation: " + random_user + " left " + active_subreddit)
+              end
+            end
+          end
+        end
+      end
+    end
+
+    // Create new users occasionally
+    if _rand.real() < 0.1 then
+      let new_username = recover val "User_" + Time.now()._1.string() end
+      _engine.register_user(new_username)
+      _env.out.print("Simulation: New user registered: " + new_username)
+      
+      // Apply Zipf distribution for initial subreddit joining
+      let subreddit_array = Array[String]
+      for name in _engine.subreddits.keys() do
+        subreddit_array.push(name)
+      end
+      
+      if subreddit_array.size() > 0 then
+        let distribution = ZipfDistribution.distribute_users(1, subreddit_array.size(), 1.2, _rand)
+        for i in Range(0, distribution.size()) do
+          try
+            if distribution(i)? > 0 then
+              _engine.join_subreddit(new_username, subreddit_array(i)?)
+              _env.out.print("Simulation: " + new_username + " joined " + subreddit_array(i)?)
+            end
+          end
+        end
+      end
+    end
+  end
