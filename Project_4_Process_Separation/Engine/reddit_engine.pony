@@ -9,7 +9,7 @@ class RedditEngine
   let _random: Random
   let _env: Env
   let _feed_generator: Feed
-
+  let _metrics: MetricsTracker
 
   new create(env: Env) =>
     _env = env
@@ -17,6 +17,7 @@ class RedditEngine
     subreddits = Map[String, Subreddit]
     _random = Rand(Time.now()._2.u64())
     _feed_generator = Feed(env)
+    _metrics = MetricsTracker(env)
 
 
 fun ref run(num_users: U64) =>
@@ -36,6 +37,14 @@ fun ref run(num_users: U64) =>
       "sports"
       "cats"
       "pics"
+      "cars"
+      "memes"
+      "politics"
+      "history"
+      "jokes"
+      "math"
+      "music"
+      "stocks"
     ]
     
     // Create default subreddits
@@ -45,15 +54,16 @@ fun ref run(num_users: U64) =>
     end
     
     // Create initial set of users (smaller number to start)
-    let initial_users = num_users.usize().min(100) // Start with max 100 users
+    // let initial_users = num_users.usize().min(100) 
+    let initial_users = num_users.usize()
     for user_idx in Range[USize](0, initial_users) do
       let new_username = generate_random_string()
       let bio = recover val "Redditor since " + Time.now()._1.string() end
       register_user(new_username, consume bio)
       
-      // Each initial user joins 2-4 random subreddits
-      let num_subs_to_join = _random.int(3).usize() + 2 // 2-4 subreddits
-      var joined = Set[USize] // Track which subreddits we've joined
+      // Each initial user joins 2-6 random subreddits
+      let num_subs_to_join = _random.int(3).usize() + 4
+      var joined = Set[USize]
       
       for i in Range(0, num_subs_to_join) do
         try
@@ -108,18 +118,21 @@ fun ref run(num_users: U64) =>
 
   fun ref create_post(username: String, subreddit_name: String, title: String, content: String) =>
     try
+      let start_time = Time.now()._2
       let subreddit = subreddits(subreddit_name)?
       if subreddit.create_post(title, content, username) then
+        _metrics.track_post(subreddit_name, username)
         _env.out.print(username + " created a post in " + subreddit_name + ": " + title)
         try
           let user = users(username)?
           user.add_post_karma(1, subreddit_name)
-          // Use the subreddit's posts array size - 1 as the post_id
           user.add_post(title, subreddit_name, subreddit.get_posts().size() - 1)
         end
       else
         _env.out.print("Error: " + username + " is not a member of " + subreddit_name)
       end
+      let end_time = Time.now()._2
+      _metrics.track_response_time((end_time - start_time).f64() / 1000000.0)
     end
 
   fun ref print_sorted_posts(subreddit_name: String, sort_type: U8) =>
@@ -153,8 +166,10 @@ fun ref run(num_users: U64) =>
 
   fun ref add_comment(username: String, subreddit_name: String, post_index: USize, content: String) =>
     try
+      let start_time = Time.now()._2
       let subreddit = subreddits(subreddit_name)?
       if subreddit.add_comment_to_post(post_index, username, content) then
+        _metrics.track_comment(subreddit_name, username)
         _env.out.print(username + " commented on post " + post_index.string())
         try
           let user = users(username)?
@@ -164,6 +179,8 @@ fun ref run(num_users: U64) =>
       else
         _env.out.print("Error: Could not add comment")
       end
+      let end_time = Time.now()._2
+      _metrics.track_response_time((end_time - start_time).f64() / 1000000.0)
     end
   
   fun ref vote_on_comment(username: String, subreddit_name: String, post_index: USize, 
@@ -195,8 +212,10 @@ fun ref run(num_users: U64) =>
 
   fun ref vote_on_post(username: String, subreddit_name: String, post_index: USize, is_upvote: Bool) =>
     try
+      let start_time = Time.now()._2
       let subreddit = subreddits(subreddit_name)?
       if subreddit.vote_on_post(post_index, username, is_upvote) then
+        _metrics.track_vote(subreddit_name, username)
         var up_or_down = ""
         if is_upvote then 
           up_or_down = " upvoted "
@@ -216,6 +235,8 @@ fun ref run(num_users: U64) =>
           end
         end
       end
+      let end_time = Time.now()._2
+      _metrics.track_response_time((end_time - start_time).f64() / 1000000.0)
     end
 
 
@@ -300,11 +321,13 @@ fun ref run(num_users: U64) =>
       user.get_message_thread(_env, thread_id)
     end
 
-  fun ref send_direct_message(from_username: String, to_username: String, 
-    content: String, thread_id: String val = "") =>
+  fun ref send_direct_message(from_username: String, to_username: String, content: String, thread_id: String val = "") =>
     try
+      let start_time = Time.now()._2
       let sender = users(from_username)?
       let recipient = users(to_username)?
+      
+      _metrics.track_message(from_username)
       
       _env.out.print(from_username + " sending message to " + to_username)
       
@@ -325,15 +348,14 @@ fun ref run(num_users: U64) =>
       
       sender.send_message(to_username.clone().string(), content.clone().string(), actual_thread_id)
       recipient.receive_message(message)
+      let end_time = Time.now()._2
+      _metrics.track_response_time((end_time - start_time).f64() / 1000000.0)
     else
       _env.out.print("Error: Could not send message")
     end
 
 
   fun ref generate_subreddit_feed(subreddit_name: String, sort_type: U8 = SortType.hot()): PostFeed? =>
-    """
-    Generate a feed for a specific subreddit
-    """
     try
       let subreddit = subreddits(subreddit_name)?
       let feed = PostFeed(_env)
@@ -346,7 +368,7 @@ fun ref run(num_users: U64) =>
       error
     end
 
-fun ref test_feeds() =>
+  fun ref test_feeds() =>
     try
       var user_iter = users.keys()
       let test_user = user_iter.next()?
@@ -384,6 +406,34 @@ fun ref test_feeds() =>
   fun ref get_subreddit_feed(subreddit_name: String, sort_type: U8 = SortType.hot()): PostFeed? =>
     _feed_generator.generate_subreddit_feed(subreddits, subreddit_name, sort_type)?
 
+  fun ref repost(original_subreddit: String, post_index: USize, target_subreddit: String, reposter: String): Bool =>
+    try
+      let start_time = Time.now()._2
+      let source_sub = subreddits(original_subreddit)?
+      let target_sub = subreddits(target_subreddit)?
+      let original_post = source_sub.get_posts()(post_index)?
+      
+      let repost_title = recover val "[Repost] " + original_post.title end
+      let repost_content = recover val original_post.content + "\n\nOriginal by u/" + 
+        original_post.author + " in r/" + original_subreddit end
+      
+      if target_sub.create_post(repost_title, repost_content, reposter) then
+        _metrics.track_repost(target_subreddit, reposter)
+        let end_time = Time.now()._2
+        _metrics.track_response_time((end_time - start_time).f64() / 1000000.0)
+        true
+      else
+        false
+      end
+    else
+      false
+    end
+
+  fun ref display_metrics() =>
+    _metrics.display_metrics()
+
+  fun get_metrics_string(): String val =>
+    _metrics.get_formatted_metrics()
 
 primitive ZipfDistribution
   fun apply(rank: USize, total_items: USize, s: F64 = 1.0): F64 =>
