@@ -29,54 +29,59 @@ actor RedditClient is ClientNotify
     try
       let message = String.from_array(data)
       let parts = recover val String.from_array(data).split(" ") end
-      let response = parts(0)?
       
-      match response
-      | "LOGIN_OK" => 
-        _env.out.print("Successfully logged in!")
-        display_menu()
-      | "POST_OK" =>
-        _env.out.print("Post created successfully!")
-        display_menu()
-      | "POST_LIST" =>
-        display_posts(consume parts)
-        display_menu()
-      | "COMMENT_OK" =>
-        _env.out.print("Comment added successfully!")
-        display_menu()
-      | "COMMENTS" =>
-        display_comments(consume parts)
-        display_menu()
-      | "SUBREDDIT_OK" =>
-        try
-          let subreddit = parts(1)?
-          _env.out.print("Successfully created subreddit: " + subreddit)
-        end
-        display_menu()
-      | "SUBREDDIT_LIST" =>
-        display_subreddits(consume parts)
-        display_menu()
-      | "JOIN_OK" =>
-        try
-          let subreddit = parts(1)?
-          _env.out.print("Successfully joined subreddit: " + subreddit)
-        end
-        display_menu()
-      | "LEAVE_OK" =>
-        try
-          let subreddit = parts(1)?
-          _env.out.print("Successfully left subreddit: " + subreddit)
-        end
-        display_menu()
-      | "MESSAGES" =>
-        display_messages(consume parts)
-        display_menu()
-      | "MESSAGE_SENT" =>
-        _env.out.print("Message sent successfully!")
+      if message.contains("###METRIC###") then
+        display_metrics(consume parts)
         display_menu()
       else
-        _env.out.print("Received unknown response: " + message)
-        display_menu()
+        let response = parts(0)?
+        match response
+        | "LOGIN_OK" => 
+          _env.out.print("Successfully logged in!")
+          display_menu()
+        | "POST_OK" =>
+          _env.out.print("Post created successfully!")
+          display_menu()
+        | "POST_LIST" =>
+          display_posts(consume parts)
+          display_menu()
+        | "COMMENT_OK" =>
+          _env.out.print("Comment added successfully!")
+          display_menu()
+        | "COMMENTS" =>
+          display_comments(consume parts)
+          display_menu()
+        | "SUBREDDIT_OK" =>
+          try
+            let subreddit = parts(1)?
+            _env.out.print("Successfully created subreddit: " + subreddit)
+          end
+          display_menu()
+        | "SUBREDDIT_LIST" =>
+          display_subreddits(consume parts)
+          display_menu()
+        | "JOIN_OK" =>
+          try
+            let subreddit = parts(1)?
+            _env.out.print("Successfully joined subreddit: " + subreddit)
+          end
+          display_menu()
+        | "LEAVE_OK" =>
+          try
+            let subreddit = parts(1)?
+            _env.out.print("Successfully left subreddit: " + subreddit)
+          end
+          display_menu()
+        | "MESSAGES" =>
+          display_messages(consume parts)
+          display_menu()
+        | "MESSAGE_SENT" =>
+          _env.out.print("Message sent successfully!")
+          display_menu()
+        else
+          _env.out.print("Received unknown response: " + message)
+          display_menu()
+        end
       end
     end
 
@@ -111,10 +116,11 @@ actor RedditClient is ClientNotify
     _env.out.print("11. View Messages")
     _env.out.print("12. Send Message")
     _env.out.print("13. Reply to Message")
-    _env.out.print("14. Exit")
+    _env.out.print("14. View Metrics")
+    _env.out.print("15. Exit")
     _env.out.print("\nEnter your choice:")
     
-    _env.input(recover MenuInputNotify(this) end)
+    _env.input(recover MenuInputNotify(this, _env) end)
 
   be handle_menu_choice(choice: String) =>
     match choice
@@ -131,11 +137,57 @@ actor RedditClient is ClientNotify
     | "11" => view_messages()
     | "12" => send_message()
     | "13" => reply_to_message()
-    | "14" => _env.exitcode(0)
+    | "14" => view_metrics()
+    | "15" => _env.exitcode(0)
     else
       _env.out.print("Invalid choice")
       display_menu()
     end
+
+  fun ref view_metrics() =>
+    match _conn
+    | let conn: TCPConnection tag =>
+      conn.write("VIEW_METRICS")
+    end
+
+  fun ref display_metrics(parts: Array[String] val) =>
+    _env.out.print("\n=== Reddit System Metrics ===")
+    _env.out.print("\nActivity Metrics:")
+    _env.out.print("------------------")
+    try
+      var i: USize = 1
+      while i < parts.size() do
+        if parts(i)? == "###METRIC###" then
+          let label = parts(i + 1)?.clone().>replace("_", " ")
+          let value = parts(i + 2)?
+          
+          match label
+          | "Total Posts" => _env.out.print("Posts created: " + value)
+          | "Total Comments" => _env.out.print("Comments made: " + value)
+          | "Total Votes" => _env.out.print("Total votes: " + value)
+          | "Total Reposts" => _env.out.print("Content reposts: " + value)
+          | "Total Messages" => _env.out.print("Direct messages: " + value)
+          | "Active Users" => _env.out.print("Active users: " + value)
+          | "Posts Per Hour" => 
+            _env.out.print("\nHourly Rates:")
+            _env.out.print("-------------")
+            _env.out.print("Posts/hour: " + value)
+          | "Comments Per Hour" => _env.out.print("Comments/hour: " + value)
+          | "Votes Per Hour" => _env.out.print("Votes/hour: " + value)
+          | "Average Response Time ms" => 
+            _env.out.print("\nPerformance Metrics:")
+            _env.out.print("-------------------")
+            _env.out.print("Average response time: " + value + " ms")
+          | "Maximum Response Time ms" => _env.out.print("Maximum response time: " + value + " ms")
+          end
+          
+          i = i + 3
+        else
+          i = i + 1
+        end
+      end
+    end
+    _env.out.print("")
 
   fun ref send_message() =>
     prompt("Enter recipient username:")
@@ -227,7 +279,7 @@ actor RedditClient is ClientNotify
     _env.out.print(message)
 
   be get_input(notify: InputNotify iso) =>
-    _env.input(LineReaderNotify(consume notify))
+    _env.input(LineReaderNotify(consume notify, _env))
 
   fun ref create_post() =>
     prompt("Enter subreddit name:")
@@ -527,50 +579,73 @@ class ReplyMessageInputNotify is InputNotify
 class LineReaderNotify is InputNotify
   let _input_handler: InputNotify iso
   let _buffer: Array[U8]
-  
-  new iso create(input_handler: InputNotify iso) =>
+  let _env: Env
+
+  new iso create(input_handler: InputNotify iso, env: Env) =>
     _input_handler = consume input_handler
     _buffer = Array[U8]
-  
+    _env = env
+
   fun ref apply(data: Array[U8] iso) =>
     for byte in (consume data).values() do
-      if byte == 10 then // newline character
-        let line = recover iso Array[U8] end
-        for b in _buffer.values() do
-          line.push(b)
+      if (byte == 8) or (byte == 127) then
+        if _buffer.size() > 0 then
+          try
+            _buffer.pop()?
+            _env.out.write(recover val [8; 32; 8] end)
+          end
         end
-        _input_handler.apply(consume line)
-        _buffer.clear()
       else
-        _buffer.push(byte)
+        _env.out.write(recover val [byte] end)
+        if byte == 10 then
+          let line = recover iso Array[U8] end
+          for b in _buffer.values() do
+            line.push(b)
+          end
+          _input_handler.apply(consume line)
+          _buffer.clear()
+        else
+          _buffer.push(byte)
+        end
       end
     end
-    
+
   fun ref dispose() =>
     _input_handler.dispose()
+
 
 class MenuInputNotify is InputNotify
   let _client: RedditClient
   let _buffer: String ref
-  
-  new iso create(client: RedditClient) =>
+  let _env: Env
+
+  new iso create(client: RedditClient, env: Env) =>
     _client = client
     _buffer = String
+    _env = env
 
   fun ref apply(data: Array[U8] iso) =>
     let input = String.from_array(consume data)
     for c in input.values() do
-      if (c == 10) or (c == 13) then // Newline or carriage return
-        let choice = _buffer.clone().>trim()
-        if choice != "" then
-          _client.handle_menu_choice(choice)
+      if (c.u8() == 8) or (c.u8() == 127) then
+        if _buffer.size() > 0 then
+          _buffer.truncate(_buffer.size() - 1)
+          _env.out.write(recover val [8; 32; 8] end)
         end
-        _buffer.clear()
       else
-        _buffer.push(c)
+        if (c == 10) or (c == 13) then
+          let choice = _buffer.clone().>trim()
+          if choice != "" then
+            _env.out.write(recover val [c.u8()] end)
+            _client.handle_menu_choice(choice)
+          end
+          _buffer.clear()
+        else
+          _env.out.write(recover val [c.u8()] end)
+          _buffer.push(c)
+        end
       end
     end
-
 
   fun ref dispose() =>
     None
