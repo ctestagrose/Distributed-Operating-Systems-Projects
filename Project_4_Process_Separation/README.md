@@ -81,6 +81,26 @@ Votes/hour: 205731
 - All tracked metrics saw roughly a 10x increase due to the increased number of users
 
 ### 10,000 Initial Users (Increase of 100x over baseline)
+```
+=== Reddit System Metrics ===
+Posts created: 32266
+Comments made: 99967
+Total votes: 349213
+Content reposts: 19198
+Direct messages: 49790
+Simulated users online: 5070
+Simulated users offline: 4993
+
+Hourly Rates:
+-------------
+Posts/hour: 193596
+Comments/hour: 599802
+Votes/hour: 2.09528e+06
+```
+- 63 new users created accounts over 10 minutes
+- 49% of users were offline after 10 minutes
+- All tracked metrics saw roughly a 100x increase due to the increased number of users
+- 975.9MiB RAM peak usage
 
 ### 100,000 Initial Users (Increase of 1,000x over baseline)
 
