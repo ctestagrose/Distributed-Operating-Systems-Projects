@@ -498,7 +498,7 @@ Simulation: hAjkIe1eenr2MZsx created a post in stocks
   Enter recipient username:
   conrad
   Enter message content:
-  this is a message 
+  this is a message to conrad
   Message sent successfully!
   ```
   - View
@@ -526,9 +526,10 @@ Simulation: hAjkIe1eenr2MZsx created a post in stocks
   
   === Your Messages ===
   
+  Message ID: 1732647790_conrad
   From: conrad
-  Content: this is a message 
-  Sent at: 1732647280
+  Content: this is a message to conrad
+  Sent at: 1732647790
   ---
   ```
   - Reply
@@ -554,9 +555,9 @@ Simulation: hAjkIe1eenr2MZsx created a post in stocks
   18. Exit
   13
   Enter message ID to reply to:
-  0
+  1732647790_conrad
   Enter reply content:
-  I am replying
+  this is a reply
   Message sent successfully!
   ```
 7. You can view your profile
