@@ -37,8 +37,52 @@ The current task is to build an engine that will be paired up with REST API/WebS
   - [X] The client part (posting, commenting, subscribing) and the engine (distribute posts, track comments, etc) have to be in separate processes. Preferably, you use multiple independent client processes that simulate thousands of clients and a single-engine process
   - [X] You need to measure various aspects of your simulator and report performance (This is currently done with the dedicated client)
 
+## Running Tests
+- Simulations were left to run for 10 minutes and resulting metrics were recorded. 
+### 100 Initial Users (Baseline)
+```
+=== Reddit System Metrics ===
+Posts created: 327
+Comments made: 973
+Total votes: 3441
+Content reposts: 214
+Direct messages: 456
+Simulated users online: 82
+Simulated users offline: 86
 
-## Example Usage
+Hourly Rates:
+-------------
+Posts/hour: 1962
+Comments/hour: 5838
+Votes/hour: 20646
+```
+- 68 new users created accounts over 10 minutes
+- 51% of users were offline after 10 minutes
+
+### 1000 Initial Users (Increase of 10x over baseline)
+```
+=== Reddit System Metrics ===
+Posts created: 3318
+Comments made: 9807
+Total votes: 34460
+Content reposts: 1893
+Direct messages: 4847
+Simulated users online: 496
+Simulated users offline: 557
+
+Hourly Rates:
+-------------
+Posts/hour: 19809
+Comments/hour: 58549.3
+Votes/hour: 205731
+```
+- 53 new users created accounts over 10 minutes
+- 53% of users were offline after 10 minutes
+- All tracked metrics saw roughly a 10x increase due to the increased number of users
+
+
+
+## How to Use/Example Usage
 ### SERVER SETUP
 1. Starting Server
 ```
@@ -130,7 +174,10 @@ Simulation: hAjkIe1eenr2MZsx created a post in stocks
   13. Reply to Message
   14. View My Profile
   15. View Metrics
-  16. Exit
+  16. Vote on Post
+  17. Vote on Comment
+  18. Exit
+
   
   Enter your choice:
   ```
@@ -158,7 +205,10 @@ Simulation: hAjkIe1eenr2MZsx created a post in stocks
   13. Reply to Message
   14. View My Profile
   15. View Metrics
-  16. Exit
+  16. Vote on Post
+  17. Vote on Comment
+  18. Exit
+
   
   Enter your choice:
   9
@@ -188,7 +238,10 @@ Simulation: hAjkIe1eenr2MZsx created a post in stocks
   13. Reply to Message
   14. View My Profile
   15. View Metrics
-  16. Exit
+  16. Vote on Post
+  17. Vote on Comment
+  18. Exit
+
   
   Enter your choice:
   2
@@ -224,7 +277,10 @@ Simulation: hAjkIe1eenr2MZsx created a post in stocks
   13. Reply to Message
   14. View My Profile
   15. View Metrics
-  16. Exit
+  16. Vote on Post
+  17. Vote on Comment
+  18. Exit
+
   
   Enter your choice:
   7
@@ -248,7 +304,10 @@ Simulation: hAjkIe1eenr2MZsx created a post in stocks
   13. Reply to Message
   14. View My Profile
   15. View Metrics
-  16. Exit
+  16. Vote on Post
+  17. Vote on Comment
+  18. Exit
+
   
   Enter your choice:
   6
@@ -357,9 +416,4 @@ Simulation: hAjkIe1eenr2MZsx created a post in stocks
   Posts/hour: 478.652
   Comments/hour: 168.539
   Votes/hour: 155.056
-  
-  Performance Metrics:
-  -------------------
-  Average response time: 0.0126963 ms
-  Maximum response time: 0.05368 ms
   ```
