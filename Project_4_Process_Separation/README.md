@@ -31,7 +31,7 @@ The current task is to build an engine that will be paired up with REST API/WebS
   - [X] Get list of direct messages; Reply to direct messages (Clients can send messages and reply to messages)
 - Tester/Simulator
   - [X] Simulate as many users as you can
-  - [ ] Simulate periods of live connection and disconnection for users
+  - [X] Simulate periods of live connection and disconnection for users (Users will go offline/online)
   - [X] Simulate a Zipf distribution on the number of sub-reddit members. For accounts with a lot of subscribers, increase the number of posts. Make some of these messages re-posts
 - Other considerations:
   - [X] The client part (posting, commenting, subscribing) and the engine (distribute posts, track comments, etc) have to be in separate processes. Preferably, you use multiple independent client processes that simulate thousands of clients and a single-engine process
@@ -294,3 +294,73 @@ Simulation: hAjkIe1eenr2MZsx created a post in stocks
   38. books
   39. Subreddit_1732633011
   ```
+5. You can view your feed
+  ```
+  Enter your choice: 8
+  === Posts ===
+  Post #0
+  Title: Post about cats 1732640955
+  Author: gbBQyXJq9gi0aWeD
+  Content: Sharing thoughts about cats
+  ---
+
+  Post #1
+  Title: Post about cats 1732640960
+  Author: hYWsFa3MsFyE0Zjm
+  Content: Sharing thoughts about cats
+  ---
+  
+  Post #2
+  Title: [Repost] [Repost] Post about stocks 1732640884
+  Author: jPUWGmeK5y2rCylY
+  Content: Sharing thoughts about stocks
+  
+  Original by u/l6edU7pyv28HhK2Q in r/stocks
+  
+  Original by u/HL6iVi6ZWEliY7Ot in r/science
+  ---
+  
+  Post #3
+  Title: I love cats
+  Author: conrad
+  Content: I really love cats
+  ---
+  ```
+6. You can view your profile
+  ```
+  Enter your choice: 14
+
+  === User Profile ===
+  Username: conrad
+  Bio: 
+  Join Date: 1732640873
+  Post Karma: 1
+  Comment Karma: 0
+  Total Karma: 1
+  Subreddit Karma: cats:1
+  ```
+7. You can also view simulation/reddit metrics
+  ```
+  Enter your choice: 15
+
+  === Reddit System Metrics ===
+  Posts created: 71
+  Comments made: 25
+  Total votes: 23
+  Content reposts: 21
+  Direct messages: 16
+  Simulated users online: 86
+  Simulated users offline: 73
+  
+  Hourly Rates:
+  -------------
+  Posts/hour: 478.652
+  Comments/hour: 168.539
+  Votes/hour: 155.056
+  
+  Performance Metrics:
+  -------------------
+  Average response time: 0.0126963 ms
+  Maximum response time: 0.05368 ms
+  ```
+
