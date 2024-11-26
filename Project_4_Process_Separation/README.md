@@ -171,35 +171,35 @@ Simulation: hAjkIe1eenr2MZsx created a post in stocks
   Server received: JOIN_SUBREDDIT cats
   ```
 3. Create a post in a subreddit:
-   ```
-   === Reddit Menu ===
-    1. Create Subreddit
-    2. Create Post
-    3. List All Posts
-    4. Add Comment
-    5. View Comments
-    6. List All Subreddits
-    7. List My Subreddits
-    8. View My Feed
-    9. Join Subreddit
-    10. Leave Subreddit
-    11. View Messages
-    12. Send Message
-    13. Reply to Message
-    14. View My Profile
-    15. View Metrics
-    16. Exit
-    
-    Enter your choice:
-    2
-    Enter subreddit name:
-    cats
-    Enter post title:
-    I love cats
-    Enter post content:
-    I really love cats
-    Post created successfully!
-   ```
+  ```
+  === Reddit Menu ===
+  1. Create Subreddit
+  2. Create Post
+  3. List All Posts
+  4. Add Comment
+  5. View Comments
+  6. List All Subreddits
+  7. List My Subreddits
+  8. View My Feed
+  9. Join Subreddit
+  10. Leave Subreddit
+  11. View Messages
+  12. Send Message
+  13. Reply to Message
+  14. View My Profile
+  15. View Metrics
+  16. Exit
+  
+  Enter your choice:
+  2
+  Enter subreddit name:
+  cats
+  Enter post title:
+  I love cats
+  Enter post content:
+  I really love cats
+  Post created successfully!
+  ```
   - Server acknowledges that user has has created a post in cats 
   ```
   Server received: POST cats I_love_cats I_really_love_cats
@@ -363,4 +363,3 @@ Simulation: hAjkIe1eenr2MZsx created a post in stocks
   Average response time: 0.0126963 ms
   Maximum response time: 0.05368 ms
   ```
-
