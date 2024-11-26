@@ -59,7 +59,7 @@ Votes/hour: 20646
 - 68 new users created accounts over 10 minutes
 - 51% of users were offline after 10 minutes
 
-### 1000 Initial Users (Increase of 10x over baseline)
+### 1,000 Initial Users (Increase of 10x over baseline)
 ```
 === Reddit System Metrics ===
 Posts created: 3318
@@ -80,7 +80,12 @@ Votes/hour: 205731
 - 53% of users were offline after 10 minutes
 - All tracked metrics saw roughly a 10x increase due to the increased number of users
 
+### 10,000 Initial Users (Increase of 100x over baseline)
 
+### 100,000 Initial Users (Increase of 1,000x over baseline)
+
+### 1,000,000 Initial Users (Increase of 10,000x over baseline)
+- Using this many users crashed terminal due to memory usage
 
 ## How to Use/Example Usage
 ### SERVER SETUP
