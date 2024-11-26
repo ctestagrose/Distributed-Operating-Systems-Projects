@@ -1,14 +1,20 @@
 # Project 4 (Part 1)
 
+## Group Members
+Conrad Testagrose
+
 ## Description
 In this project, we are tasked with implementing a Reddit Clone and a client tester/simulator.
 
 The current task is to build an engine that will be paired up with REST API/WebSockets to provide full functionality.
 
+## Dependencies
+Before proceeding, please ensure proper installation of Pony by following the guidelines posted here: https://github.com/ponylang/ponyc.
+
 ## Usage
 ### Compilation:
-- Client: Navigate to the Client folder and run ```ponyc```
-- Server: Navigate to the Server folder and run ```ponyc```
+- Client: Using terminal, navigate to the Client folder and run ```ponyc```
+- Server: Using terminal, navigate to the Server folder and run ```ponyc```
 ### Running the Reddit Server:
 - Within the Server Folder run ```./Server <Num_Clients_To_Spawn>```
 - The Server will start up and listen on localhost port 8989
