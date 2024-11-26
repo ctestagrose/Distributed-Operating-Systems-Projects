@@ -43,6 +43,9 @@ Before proceeding, please ensure proper installation of Pony by following the gu
   - [X] The client part (posting, commenting, subscribing) and the engine (distribute posts, track comments, etc) have to be in separate processes. Preferably, you use multiple independent client processes that simulate thousands of clients and a single-engine process
   - [X] You need to measure various aspects of your simulator and report performance (This is currently done with the dedicated client)
 
+## Additional Functionalities for Future
+- Getting feed based on hot, subreddit, new, etc. currently works but needs to be implemented into the client better. Right now the client feed option just uses the default of showing a feed of the subreddits the client is subscribed to.
+
 ## Running Tests
 - Simulations were left to run for 10 minutes and resulting metrics were recorded.
 - RAM usage was tracked for 10,000 and 100,000 users.
