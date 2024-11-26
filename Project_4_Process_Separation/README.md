@@ -38,4 +38,79 @@ The current task is to build an engine that will be paired up with REST API/WebS
   - [X] You need to measure various aspects of your simulator and report performance (This is currently done with the dedicated client)
 
 
-## Examples
+## Example Usage
+1. Starting Server
+```
+./Server 100
+Starting Reddit Engine Simulation with 100
+Created subreddit: programming
+Created subreddit: news
+Created subreddit: funny
+Created subreddit: science
+Created subreddit: gaming
+Created subreddit: movies
+Created subreddit: music
+Created subreddit: books
+Created subreddit: technology
+Created subreddit: sports
+Created subreddit: cats
+Created subreddit: pics
+Created subreddit: cars
+Created subreddit: memes
+Created subreddit: politics
+Created subreddit: history
+Created subreddit: jokes
+Created subreddit: math
+Created subreddit: music
+Created subreddit: stocks
+
+Simulation initialization complete!
+Created 100 initial users
+Use the simulation timer to generate ongoing activity.
+
+Simulation initialization complete!
+Use the simulation timer to generate ongoing activity.
+Listening on ::1:8989
+```
+- Server starts (in given example, the simulation starts with 100 users - more will spawn/join reddit over time).
+- The server will start with 20 default subreddits with more added by users overtime.
+2. Simulated users will start to act out simulation
+  ```
+  mkTAiIYkDA9fct5X created a post in sports: Post about sports 1732630004
+  Simulation: mkTAiIYkDA9fct5X created a post in sports
+  WIBbqgd30uk43kT1 created a post in politics: Post about politics 1732630005
+  Simulation: WIBbqgd30uk43kT1 created a post in politics
+  J1nw3r9dEKu9bh5K created a post in music: Post about music 1732630006
+  Simulation: J1nw3r9dEKu9bh5K created a post in music
+  bfz8rKVOFhubFElA created a post in memes: Post about memes 1732630009
+  Simulation: bfz8rKVOFhubFElA created a post in memes
+  6AzPrv8PR5KZfgS5 commented on post 0
+  Simulation: 6AzPrv8PR5KZfgS5 commented on post 0 in music
+  6GMg1Jaqnw5V3jpJ created a post in music: Post about music 1732630012
+  Simulation: 6GMg1Jaqnw5V3jpJ created a post in music
+  Simulation: MarfpuZGn7Qr3GtK created a post in history
+  1X2coQxpPfT7xqHy sending message to 5FVbGlcfOmshDqNL
+  Simulation: 1X2coQxpPfT7xqHy messaged 5FVbGlcfOmshDqNL about post 2
+  Simulation: New user registered: User_1732630028
+  Simulation: New subreddit created: Subreddit_1732630028
+  Simulation: qLqZMLL1RhIOK9vv joined new subreddit Subreddit_1732630028
+  Simulation: g0rPZkxZOdbad64e joined new subreddit Subreddit_1732630028
+  Simulation: vbkwagVweQavNR7g joined new subreddit Subreddit_1732630028
+  7f24sZCuk5yN3UIP sending message to MarfpuZGn7Qr3GtK
+  Simulation: 7f24sZCuk5yN3UIP messaged MarfpuZGn7Qr3GtK about post 0
+  Simulation: New subreddit created: Subreddit_1732630030
+  Simulation: ziEHYR5bAYVDCrgA joined new subreddit Subreddit_1732630030
+  hAjkIe1eenr2MZsx created a post in stocks: Post about stocks 1732630033
+  Simulation: hAjkIe1eenr2MZsx created a post in stocks
+  ```
+  - The simulation can be monitors from the server terminal.
+  - Exmaple usage shows users creating posts, commenting, messaging each other, creating subreddits, and joining/leaving subreddits.
+3. Interacting with simulation via provided client
+- Server acknowledges login:
+  ```
+  Server received: LOGIN conrad
+  Login attempt from: conrad
+  Login successful for: conrad
+  ```
+  
+  
