@@ -27,21 +27,23 @@ Before proceeding, please ensure proper installation of Pony by following the gu
 - The user can perform all tasks that the simulated clients can perform (send messages, post, create subreddits, etc.) with the additional capability of printing metrics from the simulation. 
 
 ## What is Currently Working
-- Reddit-like engine:
+- Reddit engine:
   - [X] Register account (Clients provide only usernames for simplicity right now)
   - [X] Create & join sub-reddit; leave sub-reddit (Clients can create/join/leave subreddits)
-  - [X] Post in sub-reddit. Make the posts just simple text. No need to support images or markdown. (Clients can currently post simple randomized text in subreddits)
-  - [X] Comment in sub-reddit. Keep in mind that comments are hierarchical (i.e. you can comment on a comment) (Clients can currently comment simple randomized text on posts and comments within subreddts)
-  - [X] Upvote+downvote + compute Karma (Clients can upvote and downvote, karma is computed, achievements are also assigned but not fully fleshed out yet.)
-  - [X] Get feed of posts (Clients can get a current feed of the subreddits they subscribe to)
+  - [X] Post in sub-reddit. (Clients can currently post simple randomized text in subreddits)
+  - [X] Comment in sub-reddit. (Clients can currently comment simple randomized text on posts and comments within subreddits)
+  - [X] Hierarchical comments (Users can comment on comments/posts in hierarchical format) 
+  - [X] Upvote, downvote, compute Karma (Clients can upvote and downvote, karma is computed)
+  - [X] Achievements (there is a list of achievements that can be achieved by users - i.e. "Prolific Poster") - these need to be fleshed out more
+  - [X] Get feed of posts (Clients can get a current feed of the subreddits they subscribe to) - have other filtering methods (hot, new, etc.) but they are not implemented into the client yet
   - [X] Get list of direct messages; Reply to direct messages (Clients can send messages and reply to messages)
 - Tester/Simulator
-  - [X] Simulate as many users as you can
-  - [X] Simulate periods of live connection and disconnection for users (Users will go offline/online)
-  - [X] Simulate a Zipf distribution on the number of sub-reddit members. For accounts with a lot of subscribers, increase the number of posts. Make some of these messages re-posts
-- Other considerations:
-  - [X] The client part (posting, commenting, subscribing) and the engine (distribute posts, track comments, etc) have to be in separate processes. Preferably, you use multiple independent client processes that simulate thousands of clients and a single-engine process
-  - [X] You need to measure various aspects of your simulator and report performance (This is currently done with the dedicated client)
+  - [X] Number of simulated users is specified at the time of running the server
+  - [X] Periods of live connection and disconnection for users is simulated (Users will go offline/online)
+  - [X] Zipf distribution is used in simulation. 
+- Additional Functionality:
+  - [X] The client and the engine are provided in separate processes.
+  - [X] Simulation performance is recorded and reported (This is currently done with the dedicated client)
 
 ## Additional Functionalities for Future
 - Getting feed based on hot, subreddit, new, etc. currently works but needs to be implemented into the client better. Right now the client feed option just uses the default of showing a feed of the subreddits the client is subscribed to.
