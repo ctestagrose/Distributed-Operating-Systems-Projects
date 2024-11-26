@@ -38,7 +38,9 @@ The current task is to build an engine that will be paired up with REST API/WebS
   - [X] You need to measure various aspects of your simulator and report performance (This is currently done with the dedicated client)
 
 ## Running Tests
-- Simulations were left to run for 10 minutes and resulting metrics were recorded. 
+- Simulations were left to run for 10 minutes and resulting metrics were recorded.
+- RAM usage was tracked for 10,000 and 100,000 users.
+- Due to modeling behavior through probabilites, we can expect tracked interaction metrics to increase with the number of users. 
 ### 100 Initial Users (Baseline)
 ```
 === Reddit System Metrics ===
@@ -103,9 +105,30 @@ Votes/hour: 2.09528e+06
 - 975.9MiB RAM peak usage
 
 ### 100,000 Initial Users (Increase of 1,000x over baseline)
+```
+=== Reddit System Metrics ===
+Posts created: 303642
+Comments made: 930587
+Total votes: 3264380
+Content reposts: 179574
+Direct messages: 466233
+Simulated users online: 49704
+Simulated users offline: 50349
 
+Hourly Rates:
+-------------
+Posts/hour: 1.84647e+06
+Comments/hour: 5.65898e+06
+Votes/hour: 1.9851e+07
+```
+- 53 new users created accounts over 10 minutes
+- 50% of users offline after 10 minutes. 
+- All tracked metrics saw roughly a 1000x increase due to the increased number of users
+- 9.7GiB RAM peak usage
+  
 ### 1,000,000 Initial Users (Increase of 10,000x over baseline)
 - Using this many users crashed terminal due to memory usage
+- Tests run on gaming/performance oriented Laptop with 16GB of system RAM 
 
 ## How to Use/Example Usage
 ### SERVER SETUP
@@ -176,6 +199,7 @@ Simulation: hAjkIe1eenr2MZsx created a post in stocks
   - The simulation can be monitors from the server terminal.
   - Exmaple usage shows users creating posts, commenting, messaging each other, creating subreddits, and joining/leaving subreddits.
 ### INTERACTING WITH SIMULATION VIA PROVIDED CLIENT
+- All intraction is done by typing the number next to the action in the menu you would like to perform. 
 1. Login to Reddit:
   ```
   ./Client conrad
@@ -410,7 +434,132 @@ Simulation: hAjkIe1eenr2MZsx created a post in stocks
   Content: I really love cats
   ---
   ```
-6. You can view your profile
+6. You can also upvote/downvote posts/comments
+  ```
+  === Posts ===
+  
+  Post #0
+  Title: i love cats
+  Author: conrad
+  Content: cats are great
+  ---
+  
+  === Reddit Menu ===
+  1. Create Subreddit
+  2. Create Post
+  3. List All Posts
+  4. Add Comment
+  5. View Comments
+  6. List All Subreddits
+  7. List My Subreddits
+  8. View My Feed
+  9. Join Subreddit
+  10. Leave Subreddit
+  11. View Messages
+  12. Send Message
+  13. Reply to Message
+  14. View My Profile
+  15. View Metrics
+  16. Vote on Post
+  17. Vote on Comment
+  18. Exit
+  16
+  Enter subreddit name:
+  cats
+  Enter post index:
+  0
+  Enter vote type (up/down):
+  up
+  Vote recorded successfully!
+  ```
+7. Send/View/Reply to Messages
+  - Send
+  ```
+  === Reddit Menu ===
+  1. Create Subreddit
+  2. Create Post
+  3. List All Posts
+  4. Add Comment
+  5. View Comments
+  6. List All Subreddits
+  7. List My Subreddits
+  8. View My Feed
+  9. Join Subreddit
+  10. Leave Subreddit
+  11. View Messages
+  12. Send Message
+  13. Reply to Message
+  14. View My Profile
+  15. View Metrics
+  16. Vote on Post
+  17. Vote on Comment
+  18. Exit
+  12
+  Enter recipient username:
+  conrad
+  Enter message content:
+  this is a message 
+  Message sent successfully!
+  ```
+  - View
+  ```
+  === Reddit Menu ===
+  1. Create Subreddit
+  2. Create Post
+  3. List All Posts
+  4. Add Comment
+  5. View Comments
+  6. List All Subreddits
+  7. List My Subreddits
+  8. View My Feed
+  9. Join Subreddit
+  10. Leave Subreddit
+  11. View Messages
+  12. Send Message
+  13. Reply to Message
+  14. View My Profile
+  15. View Metrics
+  16. Vote on Post
+  17. Vote on Comment
+  18. Exit
+  11
+  
+  === Your Messages ===
+  
+  From: conrad
+  Content: this is a message 
+  Sent at: 1732647280
+  ---
+  ```
+  - Reply
+  ```
+  === Reddit Menu ===
+  1. Create Subreddit
+  2. Create Post
+  3. List All Posts
+  4. Add Comment
+  5. View Comments
+  6. List All Subreddits
+  7. List My Subreddits
+  8. View My Feed
+  9. Join Subreddit
+  10. Leave Subreddit
+  11. View Messages
+  12. Send Message
+  13. Reply to Message
+  14. View My Profile
+  15. View Metrics
+  16. Vote on Post
+  17. Vote on Comment
+  18. Exit
+  13
+  Enter message ID to reply to:
+  0
+  Enter reply content:
+  I am replying
+  Message sent successfully!
+  ```
+7. You can view your profile
   ```
   Enter your choice: 14
 
@@ -423,7 +572,7 @@ Simulation: hAjkIe1eenr2MZsx created a post in stocks
   Total Karma: 1
   Subreddit Karma: cats:1
   ```
-7. You can also view simulation/reddit metrics
+8. You can also view simulation/reddit metrics
   ```
   Enter your choice: 15
 
