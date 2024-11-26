@@ -21,9 +21,6 @@ class PostFeed
     end
   
   fun ref display(env: Env, limit: USize = 25) =>
-    """
-    Display feed posts with limit
-    """
     env.out.print("\n=== Feed Posts ===")
     var count: USize = 0
     for post in posts.values() do
@@ -49,12 +46,7 @@ class Feed
 
   fun ref generate_user_feed(subreddits: Map[String, Subreddit] ref, username: String, 
     sort_type: U8 = SortType.hot()): PostFeed =>
-    """
-    Generate a feed for a user based on their subscribed subreddits
-    """
     let feed = PostFeed(_env)
-    
-    // Get all posts from subscribed subreddits
     for (subreddit_name, subreddit) in subreddits.pairs() do
         if subreddit.get_members().contains(username) then
           for post in subreddit.get_posts().values() do
@@ -68,13 +60,8 @@ class Feed
 
   fun ref generate_popular_feed(subreddits: Map[String, Subreddit] ref, 
     sort_type: U8 = SortType.hot()): PostFeed =>
-    """
-    Generate a feed of popular posts across all subreddits
-    """
     let feed = PostFeed(_env)
     
-
-    // Collect all posts from all subreddits
     for subreddit in subreddits.values() do
         for post in subreddit.get_posts().values() do
             feed.add_post(post)
@@ -86,9 +73,6 @@ class Feed
 
   fun ref generate_subreddit_feed(subreddits: Map[String, Subreddit] ref, 
     subreddit_name: String, sort_type: U8 = SortType.hot()): PostFeed? =>
-    """
-    Generate a feed for a specific subreddit
-    """
     try
       let subreddit = subreddits(subreddit_name)?
       let feed = PostFeed(_env)
