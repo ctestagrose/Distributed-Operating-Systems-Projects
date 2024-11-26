@@ -2,6 +2,7 @@ use "collections"
 use "random"
 use "time"
 use "net"
+use "../Server"
 
 class UserProfile
   let username: String
@@ -20,6 +21,12 @@ class UserProfile
     comments = Array[CommentRef]
     subreddit_karma = Map[String, SubredditKarma]
     achievements = Set[String]
+
+  fun ref get_subreddit_karma(): Map[String, SubredditKarma] ref =>
+    subreddit_karma
+
+  fun ref get_achievements(): Set[String] ref =>
+    achievements
 
 class PostRef
   let title: String
@@ -69,7 +76,7 @@ actor User
   var _comment_karma: I64
   let _inbox: Array[Message] ref
   let _sent: Array[Message] ref
-  let _message_threads: Map[String, Array[Message] ref] ref // thread_id -> messages
+  let _message_threads: Map[String, Array[Message] ref] ref
   
   new create(env: Env, username: String, bio: String = "") =>
     _env = env
@@ -163,20 +170,18 @@ actor User
     end
   
   be get_messages_for_client(conn: TCPConnection tag) =>
-      """
-      Send messages formatted for client response
-      """
-      let response = recover iso String end
-      response.append("MESSAGES")
-      
-      for message in _inbox.values() do
-        response.append(" ###MSG###")
-        response.append(" " + message.sender)
-        response.append(" " + message.content.clone().>replace(" ", "_"))
-        response.append(" " + message.timestamp.string())
-      end
-      
-      conn.write(consume response)
+    let response = recover iso String end
+    response.append("MESSAGES")
+    
+    for message in _inbox.values() do
+      response.append(" ###MSG###")
+      response.append(" " + message.sender)
+      response.append(" " + message.content.clone().>replace(" ", "_"))
+      response.append(" " + message.timestamp.string())
+      response.append(" " + message.message_id)
+    end
+    
+    conn.write(consume response)
 
   be send_message(recipient: String val, content: String val, thread_id: String val = "") =>
     let message_id: String val = _generate_message_id()
@@ -203,6 +208,36 @@ actor User
 
   fun _generate_message_id(): String =>
     Time.now()._1.string() + "_" + _profile.username
+
+  fun ref get_subreddit_karma(): Map[String, SubredditKarma] ref =>
+    _profile.get_subreddit_karma()
+
+  fun ref get_achievements(): Set[String] ref =>
+    _profile.get_achievements()
+
+
+  be get_profile_data(conn: TCPConnection tag, server: RedditServer tag) =>
+    let karma_str = recover iso String end
+    for (subreddit, karma) in _profile.get_subreddit_karma().pairs() do
+      karma_str.append(subreddit + ":" + karma.get_total().string() + " ")
+    end
+    
+    let achievement_str = recover iso String end
+    for achievement in _profile.get_achievements().values() do
+      achievement_str.append(achievement + " ")
+    end
+    
+    server.receive_profile_data(
+      _profile.username,
+      _profile.bio,
+      _profile.join_date,
+      _post_karma,
+      _comment_karma,
+      get_total_karma(),
+      consume karma_str,
+      consume achievement_str,
+      conn
+    )
 
   fun ref check_achievements() =>
     if _post_karma > 1000 then

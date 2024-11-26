@@ -22,8 +22,8 @@ class RedditEngine
 
 fun ref run(num_users: U64) =>
     _env.out.print("Starting Reddit Engine Simulation with " + num_users.string())
-    
-    // Initialize common subreddits
+    _metrics.set_initial_users(num_users.usize())
+
     let default_subreddits = [
       "programming"
       "news"
@@ -47,21 +47,17 @@ fun ref run(num_users: U64) =>
       "stocks"
     ]
     
-    // Create default subreddits
     for name in default_subreddits.values() do
       create_subreddit(name)
       _env.out.print("Created subreddit: " + name)
     end
     
-    // Create initial set of users (smaller number to start)
-    // let initial_users = num_users.usize().min(100) 
     let initial_users = num_users.usize()
     for user_idx in Range[USize](0, initial_users) do
       let new_username = generate_random_string()
       let bio = recover val "Redditor since " + Time.now()._1.string() end
       register_user(new_username, consume bio)
       
-      // Each initial user joins 2-6 random subreddits
       let num_subs_to_join = _random.int(3).usize() + 4
       var joined = Set[USize]
       
@@ -97,7 +93,6 @@ fun ref run(num_users: U64) =>
         _env.out.print("Content: " + post.content)
         _env.out.print("Score: " + post.get_score().string())
         
-        // Print comment tree
         let comments = post.get_comments()
         if comments.size() > 0 then
           _env.out.print("\nComments:")
@@ -118,7 +113,7 @@ fun ref run(num_users: U64) =>
 
   fun ref create_post(username: String, subreddit_name: String, title: String, content: String) =>
     try
-      let start_time = Time.now()._2
+      let start_time = Time.now()._2.f64() / 1_000_000.0
       let subreddit = subreddits(subreddit_name)?
       if subreddit.create_post(title, content, username) then
         _metrics.track_post(subreddit_name, username)
@@ -131,8 +126,8 @@ fun ref run(num_users: U64) =>
       else
         _env.out.print("Error: " + username + " is not a member of " + subreddit_name)
       end
-      let end_time = Time.now()._2
-      _metrics.track_response_time((end_time - start_time).f64() / 1000000.0)
+      let end_time = Time.now()._2.f64() / 1_000_000.0
+      _metrics.track_response_time(end_time - start_time)
     end
 
   fun ref print_sorted_posts(subreddit_name: String, sort_type: U8) =>
@@ -166,7 +161,7 @@ fun ref run(num_users: U64) =>
 
   fun ref add_comment(username: String, subreddit_name: String, post_index: USize, content: String) =>
     try
-      let start_time = Time.now()._2
+      let start_time = Time.now()._2.f64() / 1_000_000.0
       let subreddit = subreddits(subreddit_name)?
       if subreddit.add_comment_to_post(post_index, username, content) then
         _metrics.track_comment(subreddit_name, username)
@@ -179,7 +174,7 @@ fun ref run(num_users: U64) =>
       else
         _env.out.print("Error: Could not add comment")
       end
-      let end_time = Time.now()._2
+      let end_time = Time.now()._2.f64() / 1_000_000.0
       _metrics.track_response_time((end_time - start_time).f64() / 1000000.0)
     end
   
@@ -197,7 +192,6 @@ fun ref run(num_users: U64) =>
         _env.out.print(username + " "+ up_or_down + 
           " comment " + comment_index.string() + " on post " + post_index.string())
         
-        // Update comment author's karma with subreddit
         try
           let comment = subreddit.get_posts()(post_index)?.get_comments()(comment_index)?
           let author = users(comment.get_author())?
@@ -212,7 +206,7 @@ fun ref run(num_users: U64) =>
 
   fun ref vote_on_post(username: String, subreddit_name: String, post_index: USize, is_upvote: Bool) =>
     try
-      let start_time = Time.now()._2
+      let start_time = Time.now()._2.f64() / 1_000_000.0
       let subreddit = subreddits(subreddit_name)?
       if subreddit.vote_on_post(post_index, username, is_upvote) then
         _metrics.track_vote(subreddit_name, username)
@@ -224,7 +218,6 @@ fun ref run(num_users: U64) =>
         end
         _env.out.print(username + " "+ up_or_down + " post " + post_index.string())
         
-        // Update post author's karma with subreddit
         try
           let post = subreddit.get_posts()(post_index)?
           let author = users(post.author)?
@@ -235,7 +228,7 @@ fun ref run(num_users: U64) =>
           end
         end
       end
-      let end_time = Time.now()._2
+      let end_time = Time.now()._2.f64() / 1_000_000.0
       _metrics.track_response_time((end_time - start_time).f64() / 1000000.0)
     end
 
@@ -287,7 +280,7 @@ fun ref run(num_users: U64) =>
       let subreddit = subreddits(subreddit_name)?
       if subreddit.add_nested_comment(post_index, parent_indices, username, content) then
         let level = parent_indices.size()
-        let spaces = "  ".mul(level)  // Use string multiplication directly
+        let spaces = "  ".mul(level)
         _env.out.print(spaces + username + " replied to comment at level " + level.string())
         try
           let user = users(username)?
@@ -375,12 +368,10 @@ fun ref run(num_users: U64) =>
       
       _env.out.print("\n=== Testing Feed Generation ===")
       
-      // Test user's personal feed
       _env.out.print("\nUser's Personal Feed (Hot):")
       let user_feed = get_user_feed(test_user)
       user_feed.display(_env)
       
-      // Test popular feed with different sorts
       _env.out.print("\nPopular Feed (Top):")
       let popular_feed = get_popular_feed(SortType.top())
       popular_feed.display(_env)
@@ -389,7 +380,6 @@ fun ref run(num_users: U64) =>
       let controversial_feed = get_popular_feed(SortType.controversial())
       controversial_feed.display(_env)
       
-      // Test subreddit feed
       _env.out.print("\nProgramming Subreddit Feed (New):")
       try
         let subreddit_feed = get_subreddit_feed("programming", SortType.new_p())?
@@ -435,6 +425,16 @@ fun ref run(num_users: U64) =>
   fun get_metrics_string(): String val =>
     _metrics.get_formatted_metrics()
 
+  fun ref track_new_simulated_user(username: String) =>
+    _metrics.track_new_simulated_user(username)
+
+  fun ref track_connection_change(username: String, is_online: Bool) =>
+    _metrics.track_connection_change(username, is_online)
+
+  fun ref track_response_time(time_ms: F64) =>
+    _metrics.track_response_time(time_ms)
+
+
 primitive ZipfDistribution
   fun apply(rank: USize, total_items: USize, s: F64 = 1.0): F64 =>
     let rank_f = rank.f64()
@@ -452,13 +452,11 @@ primitive ZipfDistribution
     rand: Random): Array[USize] =>
     let distribution = Array[USize].init(0, num_subreddits)
     
-    // Calculate probabilities for each rank
     let probabilities = Array[F64].init(0, num_subreddits)
     for rank in Range(1, num_subreddits + 1) do
       probabilities.push(apply(rank, num_subreddits, s))
     end
     
-    // Assign users based on probabilities
     for user_num in Range(0, num_users) do
       var random_value = rand.real()
       var cumulative: F64 = 0
