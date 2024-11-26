@@ -39,6 +39,7 @@ The current task is to build an engine that will be paired up with REST API/WebS
 
 
 ## Example Usage
+### SERVER SETUP
 1. Starting Server
 ```
 ./Server 100
@@ -75,42 +76,221 @@ Listening on ::1:8989
 - Server starts (in given example, the simulation starts with 100 users - more will spawn/join reddit over time).
 - The server will start with 20 default subreddits with more added by users overtime.
 2. Simulated users will start to act out simulation
-  ```
-  mkTAiIYkDA9fct5X created a post in sports: Post about sports 1732630004
-  Simulation: mkTAiIYkDA9fct5X created a post in sports
-  WIBbqgd30uk43kT1 created a post in politics: Post about politics 1732630005
-  Simulation: WIBbqgd30uk43kT1 created a post in politics
-  J1nw3r9dEKu9bh5K created a post in music: Post about music 1732630006
-  Simulation: J1nw3r9dEKu9bh5K created a post in music
-  bfz8rKVOFhubFElA created a post in memes: Post about memes 1732630009
-  Simulation: bfz8rKVOFhubFElA created a post in memes
-  6AzPrv8PR5KZfgS5 commented on post 0
-  Simulation: 6AzPrv8PR5KZfgS5 commented on post 0 in music
-  6GMg1Jaqnw5V3jpJ created a post in music: Post about music 1732630012
-  Simulation: 6GMg1Jaqnw5V3jpJ created a post in music
-  Simulation: MarfpuZGn7Qr3GtK created a post in history
-  1X2coQxpPfT7xqHy sending message to 5FVbGlcfOmshDqNL
-  Simulation: 1X2coQxpPfT7xqHy messaged 5FVbGlcfOmshDqNL about post 2
-  Simulation: New user registered: User_1732630028
-  Simulation: New subreddit created: Subreddit_1732630028
-  Simulation: qLqZMLL1RhIOK9vv joined new subreddit Subreddit_1732630028
-  Simulation: g0rPZkxZOdbad64e joined new subreddit Subreddit_1732630028
-  Simulation: vbkwagVweQavNR7g joined new subreddit Subreddit_1732630028
-  7f24sZCuk5yN3UIP sending message to MarfpuZGn7Qr3GtK
-  Simulation: 7f24sZCuk5yN3UIP messaged MarfpuZGn7Qr3GtK about post 0
-  Simulation: New subreddit created: Subreddit_1732630030
-  Simulation: ziEHYR5bAYVDCrgA joined new subreddit Subreddit_1732630030
-  hAjkIe1eenr2MZsx created a post in stocks: Post about stocks 1732630033
-  Simulation: hAjkIe1eenr2MZsx created a post in stocks
-  ```
+```
+mkTAiIYkDA9fct5X created a post in sports: Post about sports 1732630004
+Simulation: mkTAiIYkDA9fct5X created a post in sports
+WIBbqgd30uk43kT1 created a post in politics: Post about politics 1732630005
+Simulation: WIBbqgd30uk43kT1 created a post in politics
+J1nw3r9dEKu9bh5K created a post in music: Post about music 1732630006
+Simulation: J1nw3r9dEKu9bh5K created a post in music
+bfz8rKVOFhubFElA created a post in memes: Post about memes 1732630009
+Simulation: bfz8rKVOFhubFElA created a post in memes
+6AzPrv8PR5KZfgS5 commented on post 0
+Simulation: 6AzPrv8PR5KZfgS5 commented on post 0 in music
+6GMg1Jaqnw5V3jpJ created a post in music: Post about music 1732630012
+Simulation: 6GMg1Jaqnw5V3jpJ created a post in music
+Simulation: MarfpuZGn7Qr3GtK created a post in history
+1X2coQxpPfT7xqHy sending message to 5FVbGlcfOmshDqNL
+Simulation: 1X2coQxpPfT7xqHy messaged 5FVbGlcfOmshDqNL about post 2
+Simulation: New user registered: User_1732630028
+Simulation: New subreddit created: Subreddit_1732630028
+Simulation: qLqZMLL1RhIOK9vv joined new subreddit Subreddit_1732630028
+Simulation: g0rPZkxZOdbad64e joined new subreddit Subreddit_1732630028
+Simulation: vbkwagVweQavNR7g joined new subreddit Subreddit_1732630028
+7f24sZCuk5yN3UIP sending message to MarfpuZGn7Qr3GtK
+Simulation: 7f24sZCuk5yN3UIP messaged MarfpuZGn7Qr3GtK about post 0
+Simulation: New subreddit created: Subreddit_1732630030
+Simulation: ziEHYR5bAYVDCrgA joined new subreddit Subreddit_1732630030
+hAjkIe1eenr2MZsx created a post in stocks: Post about stocks 1732630033
+Simulation: hAjkIe1eenr2MZsx created a post in stocks
+```
   - The simulation can be monitors from the server terminal.
   - Exmaple usage shows users creating posts, commenting, messaging each other, creating subreddits, and joining/leaving subreddits.
-3. Interacting with simulation via provided client
+### INTERACTING WITH SIMULATION VIA PROVIDED CLIENT
+1. Login to Reddit:
+  ```
+  ./Client conrad
+  Connected to Reddit server
+  Sent login request for user: conrad
+  Successfully logged in!
+  
+  === Reddit Menu ===
+  1. Create Subreddit
+  2. Create Post
+  3. List All Posts
+  4. Add Comment
+  5. View Comments
+  6. List All Subreddits
+  7. List My Subreddits
+  8. View My Feed
+  9. Join Subreddit
+  10. Leave Subreddit
+  11. View Messages
+  12. Send Message
+  13. Reply to Message
+  14. View My Profile
+  15. View Metrics
+  16. Exit
+  
+  Enter your choice:
+  ```
 - Server acknowledges login:
   ```
   Server received: LOGIN conrad
   Login attempt from: conrad
   Login successful for: conrad
   ```
+2. Before making a post or commenting, Join a subreddit:
+  ```
+  === Reddit Menu ===
+  1. Create Subreddit
+  2. Create Post
+  3. List All Posts
+  4. Add Comment
+  5. View Comments
+  6. List All Subreddits
+  7. List My Subreddits
+  8. View My Feed
+  9. Join Subreddit
+  10. Leave Subreddit
+  11. View Messages
+  12. Send Message
+  13. Reply to Message
+  14. View My Profile
+  15. View Metrics
+  16. Exit
   
+  Enter your choice:
+  9
+  Enter subreddit name to join:
+  cats
+  Successfully joined subreddit: cats
+  ```
+- Server acknowledges joining subreddit cats
+  ```
+  Server received: JOIN_SUBREDDIT cats
+  ```
+3. Create a post in a subreddit:
+   ```
+   === Reddit Menu ===
+    1. Create Subreddit
+    2. Create Post
+    3. List All Posts
+    4. Add Comment
+    5. View Comments
+    6. List All Subreddits
+    7. List My Subreddits
+    8. View My Feed
+    9. Join Subreddit
+    10. Leave Subreddit
+    11. View Messages
+    12. Send Message
+    13. Reply to Message
+    14. View My Profile
+    15. View Metrics
+    16. Exit
+    
+    Enter your choice:
+    2
+    Enter subreddit name:
+    cats
+    Enter post title:
+    I love cats
+    Enter post content:
+    I really love cats
+    Post created successfully!
+   ```
+  - Server acknowledges that user has has created a post in cats 
+  ```
+  Server received: POST cats I_love_cats I_really_love_cats
+  conrad created a post in cats: I love cats
+  Post created by: conrad
+  ```
+4. You can list both the subreddits that you have joined and all the available subreddits:
+  ```
+  === Reddit Menu ===
+  1. Create Subreddit
+  2. Create Post
+  3. List All Posts
+  4. Add Comment
+  5. View Comments
+  6. List All Subreddits
+  7. List My Subreddits
+  8. View My Feed
+  9. Join Subreddit
+  10. Leave Subreddit
+  11. View Messages
+  12. Send Message
+  13. Reply to Message
+  14. View My Profile
+  15. View Metrics
+  16. Exit
   
+  Enter your choice:
+  7
+  
+  === Available Subreddits ===
+  1. cats
+  
+  === Reddit Menu ===
+  1. Create Subreddit
+  2. Create Post
+  3. List All Posts
+  4. Add Comment
+  5. View Comments
+  6. List All Subreddits
+  7. List My Subreddits
+  8. View My Feed
+  9. Join Subreddit
+  10. Leave Subreddit
+  11. View Messages
+  12. Send Message
+  13. Reply to Message
+  14. View My Profile
+  15. View Metrics
+  16. Exit
+  
+  Enter your choice:
+  6
+  
+  === Available Subreddits ===
+  1. jokes
+  2. Subreddit_1732633012
+  3. Subreddit_1732633023
+  4. Subreddit_1732632964
+  5. gaming
+  6. Subreddit_1732632941
+  7. Subreddit_1732632945
+  8. Subreddit_1732633007
+  9. news
+  10. history
+  11. Subreddit_1732632970
+  12. Subreddit_1732632900
+  13. Subreddit_1732632934
+  14. Subreddit_1732632963
+  15. music
+  16. funny
+  17. Subreddit_1732632974
+  18. technology
+  19. programming
+  20. movies
+  21. science
+  22. sports
+  23. Subreddit_1732632907
+  24. cats
+  25. politics
+  26. cars
+  27. memes
+  28. Subreddit_1732632980
+  29. stocks
+  30. pics
+  31. Subreddit_1732632962
+  32. Subreddit_1732633025
+  33. Subreddit_1732633000
+  34. Subreddit_1732632906
+  35. Subreddit_1732632928
+  36. Subreddit_1732632996
+  37. math
+  38. books
+  39. Subreddit_1732633011
+  ```
