@@ -38,11 +38,11 @@ class Post
     comments
 
   fun ref upvote(username: String) =>
-    downvotes.unset(username)  // Remove downvote if exists
+    downvotes.unset(username)
     upvotes.set(username)
     
   fun ref downvote(username: String) =>
-    upvotes.unset(username)    // Remove upvote if exists
+    upvotes.unset(username)
     downvotes.set(username)
     
   fun get_score(): I64 =>

@@ -272,7 +272,7 @@ actor RedditClient is ClientNotify
           _env.out.print("Content: " + content)
           _env.out.print("Sent at: " + timestamp)
           _env.out.print("---")
-          i = i + 5  // Update to account for message_id
+          i = i + 5
         else
           i = i + 1
         end

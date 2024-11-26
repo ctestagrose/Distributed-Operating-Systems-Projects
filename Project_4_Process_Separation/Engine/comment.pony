@@ -40,11 +40,11 @@ class Comment
     total
 
   fun ref upvote(username: String) =>
-    downvotes.unset(username)  // Remove downvote if exists
+    downvotes.unset(username)
     upvotes.set(username)
     
   fun ref downvote(username: String) =>
-    upvotes.unset(username)    // Remove upvote if exists
+    upvotes.unset(username)  
     downvotes.set(username)
 
   fun get_score(): I64 =>
@@ -60,9 +60,6 @@ class Comment
     end
 
   fun get_nested_level(): USize =>
-    """
-    Get how deeply nested this comment is in its reply chain
-    """
     var level: USize = 0
     for reply in replies.values() do
       let reply_level = reply.get_nested_level() + 1
