@@ -78,6 +78,12 @@ actor RedditClient is ClientNotify
         | "MESSAGE_SENT" =>
           _env.out.print("Message sent successfully!")
           display_menu()
+        | "PROFILE" =>
+          display_profile(consume parts)
+          display_menu()
+        | "VOTE_OK" =>
+          _env.out.print("Vote recorded successfully!")
+          display_menu()
         else
           _env.out.print("Received unknown response: " + message)
           display_menu()
@@ -116,9 +122,11 @@ actor RedditClient is ClientNotify
     _env.out.print("11. View Messages")
     _env.out.print("12. Send Message")
     _env.out.print("13. Reply to Message")
-    _env.out.print("14. View Metrics")
-    _env.out.print("15. Exit")
-    _env.out.print("\nEnter your choice:")
+    _env.out.print("14. View My Profile")
+    _env.out.print("15. View Metrics")
+    _env.out.print("16. Vote on Post")
+    _env.out.print("17. Vote on Comment")
+    _env.out.print("18. Exit")
     
     _env.input(recover MenuInputNotify(this, _env) end)
 
@@ -137,8 +145,11 @@ actor RedditClient is ClientNotify
     | "11" => view_messages()
     | "12" => send_message()
     | "13" => reply_to_message()
-    | "14" => view_metrics()
-    | "15" => _env.exitcode(0)
+    | "14" => view_profile()
+    | "15" => view_metrics()
+    | "16" => vote_on_post()
+    | "17" => vote_on_comment()
+    | "18" => _env.exitcode(0)
     else
       _env.out.print("Invalid choice")
       display_menu()
@@ -150,10 +161,34 @@ actor RedditClient is ClientNotify
       conn.write("VIEW_METRICS")
     end
 
+  fun ref view_profile() =>
+    match _conn
+    | let conn: TCPConnection tag =>
+      conn.write("VIEW_PROFILE")
+    end
+    
+
+  fun ref display_profile(parts: Array[String] val) =>
+    _env.out.print("\n=== User Profile ===")
+    try
+      var i: USize = 1
+      while i < parts.size() do
+        if parts(i)? == "###PROFILE###" then
+          let field = parts(i + 1)?
+          let value = parts(i + 2)?
+          let output = recover val field.clone().>replace("_", " ") + ": " + 
+                                   value.clone().>replace("_", " ") end
+          _env.out.print(output)
+          i = i + 3
+        else
+          i = i + 1
+        end
+      end
+    end
+
   fun ref display_metrics(parts: Array[String] val) =>
     _env.out.print("\n=== Reddit System Metrics ===")
-    _env.out.print("\nActivity Metrics:")
-    _env.out.print("------------------")
+    
     try
       var i: USize = 1
       while i < parts.size() do
@@ -168,6 +203,8 @@ actor RedditClient is ClientNotify
           | "Total Reposts" => _env.out.print("Content reposts: " + value)
           | "Total Messages" => _env.out.print("Direct messages: " + value)
           | "Active Users" => _env.out.print("Active users: " + value)
+          | "Users Online" => _env.out.print("Simulated users online: " + value)
+          | "Users Offline" => _env.out.print("Simulated users offline: " + value)
           | "Posts Per Hour" => 
             _env.out.print("\nHourly Rates:")
             _env.out.print("-------------")
@@ -189,6 +226,29 @@ actor RedditClient is ClientNotify
     end
     _env.out.print("")
 
+  fun ref vote_on_post() =>
+    prompt("Enter subreddit name:")
+    get_input(recover VotePostInputNotify(this) end)
+
+  fun ref vote_on_comment() =>
+    prompt("Enter subreddit name:")
+    get_input(recover VoteCommentInputNotify(this) end)
+
+  be vote_post_with_data(subreddit: String val, post_index: String val, is_upvote: Bool) =>
+    match _conn
+    | let conn: TCPConnection tag =>
+      let vote_type = if is_upvote then "UPVOTE" else "DOWNVOTE" end
+      conn.write("VOTE_POST " + subreddit + " " + post_index + " " + vote_type)
+    end
+
+  be vote_comment_with_data(subreddit: String val, post_index: String val, 
+    comment_index: String val, is_upvote: Bool) =>
+    match _conn
+    | let conn: TCPConnection tag =>
+      let vote_type = if is_upvote then "UPVOTE" else "DOWNVOTE" end
+      conn.write("VOTE_COMMENT " + subreddit + " " + post_index + " " + comment_index + " " + vote_type)
+    end
+
   fun ref send_message() =>
     prompt("Enter recipient username:")
     get_input(recover SendMessageInputNotify(this) end)
@@ -206,11 +266,13 @@ actor RedditClient is ClientNotify
           let sender = parts(i + 1)?
           let content = recover val parts(i + 2)?.clone().>replace("_", " ") end
           let timestamp = parts(i + 3)?
-          _env.out.print("\nFrom: " + sender)
+          let message_id = parts(i + 4)?
+          _env.out.print("\nMessage ID: " + message_id)
+          _env.out.print("From: " + sender)
           _env.out.print("Content: " + content)
           _env.out.print("Sent at: " + timestamp)
           _env.out.print("---")
-          i = i + 4
+          i = i + 5  // Update to account for message_id
         else
           i = i + 1
         end
@@ -571,6 +633,79 @@ class ReplyMessageInputNotify is InputNotify
       _client.get_input(recover iso ReplyMessageInputNotify.from_state(_client, 1, input) end)
     | 1 =>
       _client.reply_message_with_data(_message_id, input)
+    end
+
+  fun ref dispose() =>
+    None
+
+class VotePostInputNotify is InputNotify
+  let _client: RedditClient
+  var _stage: USize = 0
+  var _subreddit: String val = ""
+  var _post_index: String val = ""
+  
+  new iso create(client: RedditClient) =>
+    _client = client
+
+  new iso from_state(client: RedditClient, stage': USize, 
+    subreddit': String val = "", post_index': String val = "") =>
+    _client = client
+    _stage = stage'
+    _subreddit = subreddit'
+    _post_index = post_index'
+
+  fun ref apply(data: Array[U8] iso) =>
+    let input = recover val String.from_array(consume data).>trim() end
+    
+    match _stage
+    | 0 =>
+      _client.prompt("Enter post index:")
+      _client.get_input(recover iso VotePostInputNotify.from_state(_client, 1, input) end)
+    | 1 =>
+      _client.prompt("Enter vote type (up/down):")
+      _client.get_input(recover iso VotePostInputNotify.from_state(_client, 2, _subreddit, input) end)
+    | 2 =>
+      let is_upvote = input.lower() == "up"
+      _client.vote_post_with_data(_subreddit, _post_index, is_upvote)
+    end
+
+  fun ref dispose() =>
+    None
+
+class VoteCommentInputNotify is InputNotify
+  let _client: RedditClient
+  var _stage: USize = 0
+  var _subreddit: String val = ""
+  var _post_index: String val = ""
+  var _comment_index: String val = ""
+  
+  new iso create(client: RedditClient) =>
+    _client = client
+
+  new iso from_state(client: RedditClient, stage': USize, 
+    subreddit': String val = "", post_index': String val = "", comment_index': String val = "") =>
+    _client = client
+    _stage = stage'
+    _subreddit = subreddit'
+    _post_index = post_index'
+    _comment_index = comment_index'
+
+  fun ref apply(data: Array[U8] iso) =>
+    let input = recover val String.from_array(consume data).>trim() end
+    
+    match _stage
+    | 0 =>
+      _client.prompt("Enter post index:")
+      _client.get_input(recover iso VoteCommentInputNotify.from_state(_client, 1, input) end)
+    | 1 =>
+      _client.prompt("Enter comment index:")
+      _client.get_input(recover iso VoteCommentInputNotify.from_state(_client, 2, _subreddit, input) end)
+    | 2 =>
+      _client.prompt("Enter vote type (up/down):")
+      _client.get_input(recover iso VoteCommentInputNotify.from_state(_client, 3, _subreddit, _post_index, input) end)
+    | 3 =>
+      let is_upvote = input.lower() == "up"
+      _client.vote_comment_with_data(_subreddit, _post_index, _comment_index, is_upvote)
     end
 
   fun ref dispose() =>

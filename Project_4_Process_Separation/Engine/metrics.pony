@@ -11,8 +11,10 @@ class MetricsTracker
   var _total_messages: USize
   var _active_users: Set[String] ref
   let _subreddit_activity: Map[String, SubredditMetrics ref] ref
-  let _response_times: Array[F64] ref // in milliseconds
+  let _response_times: Array[F64] ref
   let _user_activity_times: Map[String, Array[I64]] ref
+  let _simulated_offline_users: Set[String] ref
+  var _total_simulated_users: USize 
   
   new create(env: Env) =>
     _env = env
@@ -26,12 +28,36 @@ class MetricsTracker
     _subreddit_activity = Map[String, SubredditMetrics ref]
     _response_times = Array[F64]
     _user_activity_times = Map[String, Array[I64]]
+    _simulated_offline_users = Set[String]
+    _total_simulated_users = 0
 
   fun ref track_post(subreddit: String, author: String) =>
     _total_posts = _total_posts + 1
     _active_users.set(author)
     _track_user_activity(author)
     _get_or_create_subreddit_metrics(subreddit).add_post()
+
+  fun ref set_initial_users(count: USize) =>
+    _total_simulated_users = count
+
+  fun ref track_new_simulated_user(username: String) =>
+    _total_simulated_users = _total_simulated_users + 1
+    _active_users.set(username)
+
+  fun ref remove_simulated_user(username: String) =>
+    if _active_users.contains(username) then
+      _total_simulated_users = _total_simulated_users - 1
+      _active_users.unset(username)
+      _simulated_offline_users.unset(username)
+    end
+
+
+  fun ref track_connection_change(username: String, is_online: Bool) =>
+    if is_online then
+      _simulated_offline_users.unset(username)
+    else
+      _simulated_offline_users.set(username)
+    end
 
   fun ref track_repost(subreddit: String, author: String) =>
     _total_reposts = _total_reposts + 1
@@ -57,7 +83,10 @@ class MetricsTracker
     _track_user_activity(sender)
 
   fun ref track_response_time(time_ms: F64) =>
-    _response_times.push(time_ms)
+    if time_ms > 0 then
+      _response_times.push(time_ms)
+    end
+
 
   fun ref _track_user_activity(username: String) =>
     if not _user_activity_times.contains(username) then
@@ -83,7 +112,6 @@ class MetricsTracker
     _env.out.print("\n=== Reddit Clone Metrics Report ===")
     _env.out.print("Uptime: " + uptime_hours.string() + " hours")
     
-    // Overall activity metrics
     _env.out.print("\nOverall Activity:")
     _env.out.print("Total Posts: " + _total_posts.string())
     _env.out.print("Total Comments: " + _total_comments.string())
@@ -91,17 +119,16 @@ class MetricsTracker
     _env.out.print("Total Reposts: " + _total_reposts.string())
     _env.out.print("Total Messages: " + _total_messages.string())
     
-    // Rate calculations
+    _env.out.print("\nConnection Status:")
+    _env.out.print("Total Simulated Users: " + _total_simulated_users.string())
+    _env.out.print("Users Online: " + (_total_simulated_users - _simulated_offline_users.size()).string())
+    _env.out.print("Users Offline: " + _simulated_offline_users.size().string())
+    
     _env.out.print("\nHourly Rates:")
     _env.out.print("Posts/hour: " + (_total_posts.f64() / uptime_hours).string())
     _env.out.print("Comments/hour: " + (_total_comments.f64() / uptime_hours).string())
     _env.out.print("Votes/hour: " + (_total_votes.f64() / uptime_hours).string())
     
-    // User engagement
-    _env.out.print("\nUser Engagement:")
-    _env.out.print("Active Users: " + _active_users.size().string())
-    
-    // Response time stats
     if _response_times.size() > 0 then
       var total: F64 = 0
       var max: F64 = 0
@@ -110,12 +137,11 @@ class MetricsTracker
         if time > max then max = time end
       end
       let avg = total / _response_times.size().f64()
-      _env.out.print("\nResponse Times (ms):")
-      _env.out.print("Average: " + avg.string())
-      _env.out.print("Maximum: " + max.string())
+      _env.out.print("\nResponse Times:")
+      _env.out.print("Average: " + avg.string() + " ms")
+      _env.out.print("Maximum: " + max.string() + " ms")
     end
     
-    // Subreddit stats
     _env.out.print("\nSubreddit Activity:")
     for (name, metrics) in _subreddit_activity.pairs() do
       _env.out.print("\nr/" + name + ":")
@@ -142,15 +168,15 @@ class MetricsTracker
   fun get_formatted_metrics(): String val =>
     let response_builder = String(256)
     
-    // Overall activity
     response_builder.append(" ###METRIC### Total_Posts " + _total_posts.string())
     response_builder.append(" ###METRIC### Total_Comments " + _total_comments.string())
     response_builder.append(" ###METRIC### Total_Votes " + _total_votes.string())
     response_builder.append(" ###METRIC### Total_Reposts " + _total_reposts.string())
     response_builder.append(" ###METRIC### Total_Messages " + _total_messages.string())
-    response_builder.append(" ###METRIC### Active_Users " + _active_users.size().string())
+    response_builder.append(" ###METRIC### Total_Users " + _total_simulated_users.string())
+    response_builder.append(" ###METRIC### Users_Online " + (_total_simulated_users - _simulated_offline_users.size()).string())
+    response_builder.append(" ###METRIC### Users_Offline " + _simulated_offline_users.size().string())
     
-    // Calculate rates
     let uptime = (Time.now()._1 - _start_time).f64() / 3600.0
     if uptime > 0 then
       let posts_per_hour = _total_posts.f64() / uptime
@@ -162,7 +188,6 @@ class MetricsTracker
       response_builder.append(" ###METRIC### Votes_Per_Hour " + votes_per_hour.string())
     end
 
-    // Response times
     if _response_times.size() > 0 then
       var total: F64 = 0
       var max: F64 = 0
@@ -171,8 +196,9 @@ class MetricsTracker
         if time > max then max = time end
       end
       let avg = total / _response_times.size().f64()
-      response_builder.append(" ###METRIC### Average_Response_Time_ms " + avg.string())
-      response_builder.append(" ###METRIC### Maximum_Response_Time_ms " + max.string())
+      _env.out.print("\nResponse Times:")
+      _env.out.print("Average: " + avg.string() + " ms (from " + _response_times.size().string() + " requests)")
+      _env.out.print("Maximum: " + max.string() + " ms")
     end
 
     recover val response_builder.clone() end
@@ -183,6 +209,7 @@ class MetricsTracker
       arr.push(t)
     end
     consume arr
+    
 
 class SubredditMetrics
   var posts: USize = 0
