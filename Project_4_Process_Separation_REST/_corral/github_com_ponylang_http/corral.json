@@ -1,0 +1,19 @@
+{
+  "deps": [
+    {
+      "locator": "github.com/ponylang/net_ssl.git",
+      "version": "1.3.3"
+    }
+  ],
+  "packages": [
+    "http"
+  ],
+  "info": {
+    "description": "HTTP client library",
+    "homepage": "https://github.com/ponylang/http",
+    "license": "BSD-2-Clause",
+    "documentation_url": "https://ponylang.github.io/http/",
+    "version": "0.6.1",
+    "name": "http"
+  }
+}
