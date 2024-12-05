@@ -2,7 +2,7 @@ use "collections"
 use "random"
 use "time"
 use "net"
-use "../Server"
+use "../Server_REST"
 
 class UserProfile
   let username: String
@@ -216,7 +216,7 @@ actor User
     _profile.get_achievements()
 
 
-  be get_profile_data(conn: TCPConnection tag, server: RedditServer tag) =>
+  be get_profile_data(conn: TCPConnection tag, server: HTTPServer tag) =>
     let karma_str = recover iso String end
     for (subreddit, karma) in _profile.get_subreddit_karma().pairs() do
       karma_str.append(subreddit + ":" + karma.get_total().string() + " ")

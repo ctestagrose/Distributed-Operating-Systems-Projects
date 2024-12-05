@@ -4,11 +4,11 @@ use "format"
 use "time"
 
 primitive GET
-primitive POSTING
+primitive POST
 primitive PUT
 primitive DELETE
 
-type Method is (GET | POSTING | PUT | DELETE)
+type Method is (GET | POST | PUT | DELETE)
 
 actor RedditClient
   let _env: Env
@@ -36,12 +36,103 @@ actor RedditClient
       _port
     )
 
+  be connected() =>
+    _env.out.print("Connected to Reddit server")
+    register_user()
+
+  be register_user() =>
+    let headers = recover val 
+      let map = Map[String, String]
+      map("Content-Type") = "application/json"
+      map
+    end
+    
+    let body = recover val
+      let json = String
+      json.append("{")
+      json.append("\"username\":\"" + _username + "\",")
+      json.append("\"bio\":\"A Reddit Clone user\"")
+      json.append("}")
+      json
+    end
+    
+    _send_request(POST, "/users", headers, body)
+
+  be subscribe_to_subreddit(subreddit: String) =>
+    let headers = recover val 
+      let map = Map[String, String]
+      map("Content-Type") = "application/json"
+      map
+    end
+    
+    let body = recover val
+      let json = String
+      json.append("{")
+      json.append("\"username\":\"" + _username + "\"")
+      json.append("}")
+      json
+    end
+
+    _send_request(POST, "/subreddits/" + subreddit + "/subscribe", headers, body)
+
+  be list_subreddits() =>
+    let headers = recover val Map[String, String] end
+    _send_request(GET, "/subreddits", headers, "")
+
+  be create_post(subreddit: String, title: String, content: String) =>
+    let headers = recover val 
+      let map = Map[String, String]
+      map("Content-Type") = "application/json"
+      map
+    end
+    
+    let body = recover val
+      let json = String
+      json.append("{")
+      json.append("\"username\":\"" + _username + "\",")
+      json.append("\"title\":\"" + title + "\",")
+      json.append("\"content\":\"" + content + "\"")
+      json.append("}")
+      json
+    end
+    
+    _send_request(POST, "/subreddits/" + subreddit + "/posts", headers, body)
+
+  be vote_on_post(subreddit: String, post_id: USize, is_upvote: Bool) =>
+    let headers = recover val 
+      let map = Map[String, String]
+      map("Content-Type") = "application/json"
+      map
+    end
+    
+    let body = recover val
+      let json = String
+      json.append("{")
+      json.append("\"username\":\"" + _username + "\",")
+      json.append("\"subreddit\":\"" + subreddit + "\",")
+      json.append("\"upvote\":" + if is_upvote then "true" else "false" end)
+      json.append("}")
+      json
+    end
+    
+    _send_request(POST, "/posts/" + post_id.string() + "/vote", headers, body)
+
+  fun ref _send_request(method: Method, path: String, headers: Map[String, String] val, body: String val) =>
+    try
+      let conn = _conn as TCPConnection tag
+      let request = _build_request(method, path, headers, body)
+      _env.out.print("Sending request:\n" + request.clone())
+      conn.write(consume request)
+    else
+      _env.out.print("Error: Not connected to server")
+    end
+
   fun ref _build_request(method: Method, path: String, headers: Map[String, String] val, body: String): String iso^ =>
     let request = recover iso String end
     
     let method_str = match method
     | GET => "GET"
-    | POSTING => "POST"
+    | POST => "POST"
     | PUT => "PUT"
     | DELETE => "DELETE"
     end
@@ -64,61 +155,18 @@ actor RedditClient
     
     consume request
 
-  fun ref _send_request(method: Method, path: String, headers: Map[String, String] val, body: String val) =>
-    try
-      let conn = _conn as TCPConnection tag
-      let request = _build_request(method, path, headers, body)
-      _env.out.print("Sending request:\n" + request.clone())
-      conn.write(consume request)
-    else
-      _env.out.print("Error: Not connected to server")
-    end
-
-  be list_subreddits() =>
-    let headers = recover val Map[String, String] end
-    _send_request(GET, "/subreddits", headers, "")
-
-  be register_user(bio: String = "") =>
-    let headers = recover val 
-      let map = Map[String, String]
-      map("Content-Type") = "application/json"
-      map
-    end
-    
-    let body = recover val
-      let json = String
-      json.append("{")
-      json.append("\"username\":\"" + _username + "\",")
-      json.append("\"bio\":\"" + bio + "\"")
-      json.append("}")
-      json
-    end
-    
-    _send_request(POSTING, "/users", headers, body)
-
-  be subscribe_to_subreddit(subreddit: String) =>
-    let headers = recover val 
-      let map = Map[String, String]
-      map("Content-Type") = "application/json"
-      map
-    end
-    
-    let body = recover val
-      let json = String
-      json.append("{")
-      json.append("\"username\":\"" + _username + "\"")
-      json.append("}")
-      json
-    end
-    
-    _send_request(POSTING, "/subreddits/" + subreddit + "/subscribe", headers, body)
-
-  be connected() =>
-    _env.out.print("Connected to Reddit server")
 
   be received(data: Array[U8] val) =>
     let response = String.from_array(data)
     _env.out.print("Received response:\n" + response)
+    
+    // After registration, try to join programming subreddit
+    if response.contains("User created") then
+      subscribe_to_subreddit("programming")
+    // After joining subreddit, create a test post
+    elseif response.contains("Subscribed to subreddit") then
+      create_post("programming", "My First Post", "Hello Reddit Clone!")
+    end
 
   be closed() =>
     _env.out.print("Disconnected from Reddit server")
