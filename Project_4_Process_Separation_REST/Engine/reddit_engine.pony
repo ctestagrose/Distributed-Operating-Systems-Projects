@@ -110,6 +110,15 @@ fun ref run(num_users: U64) =>
       _env.out.print("Members: " + ",".join(sub.get_members_clone().values()))
     end
 
+  fun ref get_post(post_id: USize, subreddit_name: String): RedditPost ? =>
+    let subreddit = subreddits(subreddit_name)?
+    let posts = subreddit.get_posts()
+    if post_id < posts.size() then
+      posts(post_id)?
+    else
+      error
+    end
+
 
   fun ref create_post(username: String, subreddit_name: String, title: String, content: String) =>
     try
