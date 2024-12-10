@@ -17,18 +17,127 @@ actor RedditEngineWrapper
   new create(env: Env) =>
     _env = env
     _engine = RedditEngine(env)
+    
+    // Initialize default subreddits
+    let default_subreddits = [
+      "programming"
+      "news"
+      "funny" 
+      "science"
+      "gaming"
+      "movies"
+      "music" 
+      "books"
+      "technology"
+      "sports"
+      "cats"
+      "pics"
+      "cars"
+      "memes"
+      "politics"
+      "history"
+      "jokes"
+      "math"
+      "music"
+      "stocks"
+    ]
+    
+  for name in default_subreddits.values() do
+    _engine.create_subreddit(name)
+    _env.out.print("Created subreddit: " + name)
+  end
+
+  // Create test user and add sample posts
+  _engine.register_user("system_bot", "A bot that creates initial content")
+  _engine.join_subreddit("system_bot", "programming")
+  
+  _engine.create_post("system_bot", "programming", 
+    "Intro to Pony Programming", 
+    "Pony is an actor-model language focusing on safety and performance.")
+    
+  _engine.create_post("system_bot", "programming",
+    "Understanding Reference Capabilities",
+    "Reference capabilities are key to Pony's concurrency model.")
+    
+  _engine.create_post("system_bot", "programming",
+    "Actor Communication Patterns",
+    "Best practices for message passing between actors in distributed systems.")
+
+  _env.out.print("Initialized test content")
   
   be register_user(username: String, bio: String) =>
     _engine.register_user(username, bio)
     
   be join_subreddit(username: String, subreddit: String) =>
     _engine.join_subreddit(username, subreddit)
+
+  be create_subreddit(name: String) =>
+    _env.out.print("Creating subreddit: " + name)
+    _engine.create_subreddit(name)
     
   be create_post(username: String, subreddit: String, title: String, content: String) =>
     _engine.create_post(username, subreddit, title, content)
     
   be vote_on_post(username: String, subreddit: String, post_index: USize, is_upvote: Bool) =>
     _engine.vote_on_post(username, subreddit, post_index, is_upvote)
+
+  be add_comment(username: String, subreddit: String, post_id: USize, content: String) =>
+    _env.out.print("Adding comment from " + username + " to post " + post_id.string())
+    _engine.add_comment(username, subreddit, post_id, content)
+
+
+  be vote_on_comment(username: String, subreddit: String, post_id: USize, 
+    comment_id: USize, is_upvote: Bool) =>
+    _engine.vote_on_comment(username, subreddit, post_id, comment_id, is_upvote)
+    _env.out.print("Processed vote on comment " + comment_id.string())
+
+  be get_post(post_id: USize, conn: TCPConnection tag) =>
+      // Search through all subreddits to find the post
+      for (subreddit_name, subreddit) in _engine.subreddits.pairs() do
+        try
+          let post = _engine.get_post(post_id, subreddit_name)?
+          let response = JsonBuilder.post_with_comments(post)
+          conn.write(response)
+          return
+        end
+      end
+      // If we get here, post wasn't found
+      let headers = recover val Map[String, String] end
+      let error_response = HTTPResponse(404, headers, "{\"error\":\"Post not found\"}\n")
+      conn.write(error_response.string())
+
+  be get_popular_feed(conn: TCPConnection tag) =>
+    let feed = _engine.get_popular_feed()
+    let response = JsonBuilder.feed_to_json(feed)
+    conn.write(response)
+
+  be get_sorted_subreddit_feed(subreddit: String, sort_type: U8, conn: TCPConnection tag) =>
+    try
+      _env.out.print("Getting feed for subreddit: " + subreddit)
+      let feed = _engine.get_subreddit_feed(subreddit, sort_type)?
+      _env.out.print("Got feed with " + feed.posts.size().string() + " posts")
+      
+      let response_body = JsonBuilder.feed_to_json(feed)
+      _env.out.print("Generated JSON response: " + response_body)
+      
+      let headers = recover val 
+        let map = Map[String, String]
+        map("Content-Type") = "application/json"
+        map
+      end
+      
+      let http_response = HTTPResponse(200, headers, response_body)
+      conn.write(http_response.string())
+    else
+      _env.out.print("Error getting subreddit feed")
+      let headers = recover val 
+        let map = Map[String, String]
+        map("Content-Type") = "application/json"
+        map
+      end
+      let error_response = HTTPResponse(404, headers, "{\"error\":\"Subreddit not found or error getting feed\"}\n")
+      conn.write(error_response.string())
+    end
 
   be get_subreddit_posts(subreddit: String, conn: TCPConnection tag) =>
     try
@@ -63,6 +172,82 @@ actor RedditEngineWrapper
       let error_response = HTTPResponse(404, headers, "{\"error\":\"Subreddit not found\"}\n")
       conn.write(error_response.string())
     end
+
+
+primitive JsonBuilder
+  fun feed_to_json(feed: PostFeed): String =>
+    let response = recover iso String end
+    response.append("{\"posts\":[")
+    
+    var first = true
+    for post in feed.posts.values() do
+      if not first then response.append(",") end
+      response.append("{")
+      response.append("\"id\":\"" + post.created_at.string() + "\",")
+      response.append("\"title\":\"" + post.title + "\",")
+      response.append("\"author\":\"" + post.author + "\",")
+      response.append("\"content\":\"" + post.content + "\",")
+      response.append("\"score\":" + post.get_score().string() + ",")
+      response.append("\"upvotes\":" + post.upvotes.size().string() + ",")
+      response.append("\"downvotes\":" + post.downvotes.size().string() + ",")
+      response.append("\"commentCount\":" + post.get_comments().size().string())
+      response.append("}")
+      first = false
+    end
+    
+    response.append("]}")
+    consume response
+
+  fun post_to_json(post: RedditPost): String val =>
+    let json = recover iso String end
+    json.append("{")
+    json.append("\"title\":\"" + post.title + "\",")
+    json.append("\"author\":\"" + post.author + "\",")
+    json.append("\"content\":\"" + post.content + "\",")
+    json.append("\"score\":" + post.get_score().string() + ",")
+    json.append("\"upvotes\":" + post.upvotes.size().string() + ",")
+    json.append("\"downvotes\":" + post.downvotes.size().string() + ",")
+    json.append("\"commentCount\":" + post.get_comments().size().string() + ",")
+    json.append("\"created_at\":" + post.created_at.string() + ",")
+    json.append("\"hotScore\":" + post.get_hot_score().string() + ",")
+    json.append("\"controversyScore\":" + post.get_controversy_score().string() + ",")
+    json.append("\"comments\":" + comments_to_json(post.get_comments()))
+    json.append("}")
+    consume json
+
+  fun post_with_comments(post: RedditPost): String val =>
+    let json = recover iso String end
+    json.append("{")
+    json.append("\"post\":" + post_to_json(post) + ",")
+    json.append("\"comments\":" + comments_to_json(post.get_comments()))
+    json.append("}")
+    consume json
+
+  fun comments_to_json(comments: Array[Comment] ref): String val =>
+    let json = recover iso String end
+    json.append("[")
+    var first = true
+    for comment in comments.values() do
+      if not first then json.append(",") end
+      json.append(comment_to_json(comment))
+      first = false
+    end
+    json.append("]")
+    consume json
+
+  fun comment_to_json(comment: Comment): String val =>
+    let json = recover iso String end
+    json.append("{")
+    json.append("\"author\":\"" + comment.get_author() + "\",")
+    json.append("\"content\":\"" + comment.get_content() + "\",")
+    json.append("\"score\":" + comment.get_score().string() + ",")
+    json.append("\"upvotes\":" + comment.upvotes.size().string() + ",")
+    json.append("\"downvotes\":" + comment.downvotes.size().string() + ",")
+    json.append("\"replies\":" + comments_to_json(comment.get_replies()) + ",")
+    json.append("\"created_at\":" + comment.created_at.string())
+    json.append("}")
+    consume json
+
 class val RoutePattern
   let segments: Array[String] val
   let param_indices: Map[String, USize] val
@@ -253,6 +438,28 @@ fun ref initialize_routes() =>
       end
     }))
 
+    // Subreddit creation routec
+    _routes.push(Route(POST, "/subreddits", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
+      try
+        let json = JsonParser.parse(request.body, _env)?
+        let subreddit_name = json("name")? as String
+        
+        _reddit_engine.create_subreddit(subreddit_name)
+        
+        let headers = recover val 
+          let map = Map[String, String]
+          map("Content-Type") = "application/json"
+          map
+        end
+        HTTPResponse(201, headers, "{\"status\":\"success\",\"message\":\"Subreddit created\"}\n")
+      else
+        _env.out.print("Failed to process subreddit creation request")
+        let headers = recover val Map[String, String] end
+        HTTPResponse(400, headers, "{\"error\":\"Invalid request body\"}\n")
+      end
+    }))
+
+
     // Subreddit subscribe route
     _routes.push(Route(POST, "/subreddits/:name/subscribe", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
       try
@@ -306,7 +513,62 @@ fun ref initialize_routes() =>
       end
     }))
 
-    // Vote route
+    // _routes.push(Route(GET, "/feed/subscribed", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
+    //   try
+    //     let username = request.headers("Username")?
+    //     let all_posts = Array[(String, RedditPost)]  // Tuple of (subreddit_name, post)
+        
+    //     // Gather posts from all subreddits the user is subscribed to
+    //     for (sub_name, subreddit) in _reddit_engine.subreddits.pairs() do
+    //       if subreddit.get_members().contains(username) then
+    //         for post in subreddit.get_posts().values() do
+    //           all_posts.push((sub_name, post))
+    //         end
+    //       end
+    //     end
+        
+    //     // Sort posts by hot score
+    //     all_posts.>sort_by({(a: (String, RedditPost), b: (String, RedditPost)): Bool => 
+    //       a._2.get_hot_score() > b._2.get_hot_score()
+    //     })
+        
+    //     let feed = recover val
+    //       let json = String
+    //       json.append("{\"posts\":[")
+    //       var first = true
+    //       for (sub_name, post) in all_posts.values() do
+    //         if not first then json.append(",") end
+    //         json.append("{")
+    //         json.append("\"subreddit\":\"" + sub_name + "\",")
+    //         json.append("\"title\":\"" + post.title + "\",")
+    //         json.append("\"author\":\"" + post.author + "\",")
+    //         json.append("\"content\":\"" + post.content + "\",")
+    //         json.append("\"score\":" + post.get_score().string() + ",")
+    //         json.append("\"commentCount\":" + post.get_comments().size().string())
+    //         json.append("}")
+    //         first = false
+    //       end
+    //       json.append("]}")
+    //       json
+    //     end
+        
+    //     let headers = recover val 
+    //       let map = Map[String, String]
+    //       map("Content-Type") = "application/json"
+    //       map
+    //     end
+        
+    //     HTTPResponse(200, headers, feed)
+    //   else
+    //     let headers = recover val 
+    //       let map = Map[String, String]
+    //       map("Content-Type") = "application/json"
+    //       map
+    //     end
+    //     HTTPResponse(400, headers, "{\"error\":\"Could not get subscribed feed\"}\n")
+    //   end
+    // }))
+
     _routes.push(Route(POST, "/posts/:id/vote", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
       try
         let post_id = params("id")?.usize()?
@@ -316,6 +578,154 @@ fun ref initialize_routes() =>
         let is_upvote = json("upvote")? as Bool
         
         _reddit_engine.vote_on_post(username, subreddit, post_id, is_upvote)
+        
+        let headers = recover val 
+          let map = Map[String, String]
+          map("Content-Type") = "application/json"
+          map
+        end
+        HTTPResponse(200, headers, "{\"status\":\"success\",\"message\":\"Vote recorded\"}\n")
+      else
+        let headers = recover val Map[String, String] end
+        HTTPResponse(400, headers, "{\"error\":\"Invalid request\"}\n")
+      end
+    }))
+
+    // Get all posts
+    _routes.push(Route(GET, "/posts", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
+        let feed = _reddit_engine.get_popular_feed(conn)
+        
+        let headers = recover val 
+          let map = Map[String, String]
+          map("Content-Type") = "application/json"
+          map
+        end
+        
+        // Empty response since actual feed will be sent asynchronously
+        HTTPResponse(200, headers, "")
+    }))
+
+    // Get specific post with comments
+    _routes.push(Route(GET, "/posts/:id", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
+      try
+        let post_id = params("id")?.usize()?
+        let post = _reddit_engine.get_post(post_id, conn)
+        
+        let headers = recover val 
+          let map = Map[String, String]
+          map("Content-Type") = "application/json"
+          map
+        end
+        
+        HTTPResponse(200, headers, "")
+      else
+        let headers = recover val Map[String, String] end
+        HTTPResponse(404, headers, "{\"error\":\"Post not found\"}\n")
+      end
+    }))
+
+    _routes.push(Route(POST, "/posts/:id/vote", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
+      try
+        let post_id = params("id")?.usize()?
+        let json = JsonParser.parse(request.body, _env)?
+        let username = json("username")? as String
+        let subreddit = json("subreddit")? as String
+        let is_upvote = json("upvote")? as Bool
+        
+        _reddit_engine.vote_on_post(username, subreddit, post_id, is_upvote)
+        
+        let headers = recover val 
+          let map = Map[String, String]
+          map("Content-Type") = "application/json"
+          map
+        end
+        HTTPResponse(200, headers, "{\"status\":\"success\",\"message\":\"Vote recorded\"}\n")
+      else
+        let headers = recover val Map[String, String] end
+        HTTPResponse(400, headers, "{\"error\":\"Invalid request\"}\n")
+      end
+    }))
+
+
+    _routes.push(Route(GET, "/subreddits/:name/feed/:sort", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
+      try
+        let subreddit_name = params("name")?
+        let sort = params("sort")?
+        let sort_type = match sort
+          | "hot" => SortType.hot()
+          | "new" => SortType.new_p()
+          | "controversial" => SortType.controversial() 
+          | "top" => SortType.top()
+        else
+          SortType.hot() // Default to hot
+        end
+        
+        _reddit_engine.get_sorted_subreddit_feed(subreddit_name, sort_type, conn)
+        
+        let headers = recover val Map[String, String] end
+        HTTPResponse(200, headers, "") // Response sent asynchronously
+      else
+        let headers = recover val Map[String, String] end
+        HTTPResponse(404, headers, "{\"error\":\"Subreddit not found\"}\n")
+      end
+    }))
+
+    // Get subreddit posts with sort options
+    _routes.push(Route(GET, "/subreddits/:name/:sort", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
+      try
+        let subreddit_name = params("name")?
+        let sort_type = match params("sort")?
+        | "hot" => SortType.hot()
+        | "new" => SortType.new_p()
+        | "controversial" => SortType.controversial()
+        | "top" => SortType.top()
+        else
+          SortType.hot()
+        end
+        
+        _reddit_engine.get_sorted_subreddit_feed(subreddit_name, sort_type, conn)
+        
+        // Return empty 200 response - actual content will be sent async
+        let headers = recover val Map[String, String] end
+        HTTPResponse(200, headers, "")
+      else
+        let headers = recover val Map[String, String] end
+        HTTPResponse(404, headers, "{\"error\":\"Invalid subreddit or sort type\"}\n")
+      end
+    }))
+
+    _routes.push(Route(POST, "/posts/:id/comments", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
+      try
+        let post_id = params("id")?.usize()?
+        let json = JsonParser.parse(request.body, _env)?
+        let username = json("username")? as String
+        let content = json("content")? as String
+        let subreddit = json("subreddit")? as String
+        
+        _reddit_engine.add_comment(username, subreddit, post_id, content)
+        
+        let headers = recover val 
+          let map = Map[String, String]
+          map("Content-Type") = "application/json"
+          map
+        end
+        HTTPResponse(201, headers, "{\"status\":\"success\",\"message\":\"Comment added\"}\n")
+      else
+        let headers = recover val Map[String, String] end
+        HTTPResponse(400, headers, "{\"error\":\"Invalid request\"}\n")
+      end
+    }))
+
+    _routes.push(Route(POST, "/comments/:id/vote", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
+      try
+        let comment_id = params("id")?.usize()?
+        let json = JsonParser.parse(request.body, _env)?
+        let username = json("username")? as String
+        let subreddit = json("subreddit")? as String
+        let post_id = json("post_id")? as String
+        let is_upvote = json("upvote")? as Bool
+        
+        _reddit_engine.vote_on_comment(username, subreddit, post_id.usize()?, comment_id, is_upvote)
         
         let headers = recover val 
           let map = Map[String, String]
@@ -552,7 +962,6 @@ primitive JsonParser
     let result = Map[String, (String | Bool)]
     
     try
-      // Verify and clean JSON
       let content = recover val
         let tmp = String(json_str.size())
         var in_string = false
@@ -577,42 +986,32 @@ primitive JsonParser
         tmp
       end
       
-      env.out.print("Cleaned content: " + content)
+      env.out.print("Cleaned content: '" + content + "'")
       
       if (content.size() < 2) or (content(0)? != '{') or (content(content.size()-1)? != '}') then
         env.out.print("Invalid JSON format - Missing braces")
         error
       end
       
-      // Remove outer braces and split into pairs
       let inner_content = recover val
-        content.substring(ISize(1), ISize.from[USize](content.size()-1))
+        content.substring(ISize(1), ISize.from[USize](content.size() - 1))
       end
+      env.out.print("Inner content: '" + inner_content + "'")
       
-      let pairs = recover val
-        inner_content.split(",")
-      end
+      let pairs = recover val inner_content.split(",") end
+      env.out.print("Found " + pairs.size().string() + " pairs")
       
-      env.out.print("Processing " + pairs.size().string() + " pairs")
-      
-      // Process each key-value pair
-      for pair in (consume pairs).values() do
+      for pair in pairs.values() do
         try
-          let pair_parts = recover val
-            pair.split(":", 2)
-          end
-          
-          if pair_parts.size() != 2 then
-            env.out.print("Invalid pair format: " + pair)
-            error
-          end
+          env.out.print("Processing pair: '" + pair + "'")
+          let pair_parts = recover val pair.split(":", 2) end
           
           let raw_key = pair_parts(0)?
           let raw_value = pair_parts(1)?
+          env.out.print("Raw key: '" + raw_key + "', Raw value: '" + raw_value + "'")
           
-          // Clean and extract key
           let key = recover val
-            let tmp = String(raw_key.size())
+            let tmp = String
             var started = false
             for c in raw_key.values() do
               if not started and (c == '"') then
@@ -621,55 +1020,49 @@ primitive JsonParser
                 tmp.push(c)
               end
             end
-            consume tmp
+            tmp
           end
+          env.out.print("Cleaned key: '" + key + "'")
           
-          // Clean and extract value
-          let value = recover val
-            let tmp = String(raw_value.size())
-            var started = false
-            for c in raw_value.values() do
-              if not started and (c == '"') then
-                started = true
-              elseif started and (c != '"') then
-                tmp.push(c)
-              elseif (c != ' ') and (c != '\t') and (c != '\n') and (c != '\r') and (c != '"') then
-                tmp.push(c)
-              end
-            end
-            consume tmp
+          // Check if value is a boolean
+          let trimmed_value = recover val
+            String.join(raw_value.split(" ").values())
           end
+          env.out.print("Trimmed value: '" + trimmed_value + "'")
           
-          let debug_str = recover val
-            "Found pair - Key: '" + key + "', Value: '" + value + "'"
-          end
-          env.out.print(consume debug_str)
-          
-          if raw_value.find("\"")? != -1 then
-            // String value
-            result(key) = value
-          elseif value == "true" then
+          if trimmed_value == "true" then
+            env.out.print("Adding boolean true")
             result(key) = true
-          elseif value == "false" then
+          elseif trimmed_value == "false" then
+            env.out.print("Adding boolean false")
             result(key) = false
           else
-            let err_msg = recover val "Unrecognized value type: " + value end
-            env.out.print(consume err_msg)
-            error
+            // Handle as string
+            let value = recover val
+              let tmp = String
+              var started = false
+              for c in raw_value.values() do
+                if not started and (c == '"') then
+                  started = true
+                elseif started and (c != '"') then
+                  tmp.push(c)
+                end
+              end
+              tmp
+            end
+            env.out.print("Adding string value: '" + value + "'")
+            result(key) = value
           end
+          
         else
           env.out.print("Error processing pair")
           error
         end
       end
       
-      if result.size() == 0 then
-        env.out.print("No valid key-value pairs found")
-        error
-      end
-      
       env.out.print("Successfully parsed " + result.size().string() + " pairs")
       result
+      
     else
       env.out.print("JSON parsing failed")
       error
