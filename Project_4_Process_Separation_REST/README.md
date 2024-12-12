@@ -22,4 +22,18 @@ Before proceeding, please ensure proper installation of Pony by following the gu
 ### Running the Dedicated Client:
 - Within the Client Folder run ```./Client_REST <username>```
 - The dedicated client allows for an individual to interact with the reddit engine and the simulation.
-- The user can perform all tasks that the simulated clients can perform (post, create subreddits, etc.) with the additional capability of printing metrics from the simulation. 
+- The user can perform all tasks that the simulated clients can perform (post, create subreddits, etc.) with the additional capability of printing metrics from the simulation.
+
+## What is Currently Working
+- Client
+  - [X] RESTful client that communicates to the server.
+- Server
+  - [X] RESTful server that communicates with the client.
+- Reddit engine:
+  - [X] Register account (Clients provide only usernames for simplicity right now)
+  - [X] Create & join sub-reddit; leave sub-reddit (Clients can create/join/leave subreddits)
+  - [X] Post in sub-reddit. (Clients can currently post simple randomized text in subreddits)
+  - [X] Comment in sub-reddit. (Clients can currently comment simple randomized text on posts and comments within subreddits)
+  - [X] Hierarchical comments (Users can comment on comments/posts in hierarchical format) 
+  - [X] Upvote, downvote, compute Karma (Clients can upvote and downvote, karma is computed)
+  - [X] Get feed of posts (Clients can get a current feed of the subreddits they subscribe to) - have other filtering methods (hot, new, etc.) but they are not implemented into the client yet
