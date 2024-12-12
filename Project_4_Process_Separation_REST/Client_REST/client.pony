@@ -87,25 +87,26 @@ actor RedditRESTClient
     _env.out.print("Sending registration request...")
     send_request(POST, "/users", headers, body)
 
-  fun ref display_menu() =>
-    _env.out.print("\n=== Reddit REST Client Menu ===")
-    _env.out.print("1. Create Subreddit")
-    _env.out.print("2. Subscribe to Subreddit")
-    _env.out.print("3. Create Post")
-    _env.out.print("4. Get All Posts")
-    _env.out.print("5. Get Specific Post")
-    _env.out.print("6. Add Comment")
-    _env.out.print("7. Vote on Post")
-    _env.out.print("8. Vote on Comment")
-    _env.out.print("9. Get Subreddit Feed (Hot)")
-    _env.out.print("10. Get Subreddit Feed (New)")
-    _env.out.print("11. Get Subreddit Feed (Top)")
-    _env.out.print("12. Get Subreddit Feed (Controversial)")
-    _env.out.print("13. Get Subscribed Subreddits Feed")
-    _env.out.print("14. Exit")
-    
-    _env.out.print("\nEnter your choice:")
-    _env.input(recover MenuInputNotify(this, _env) end)
+fun ref display_menu() =>
+  // Add a newline for spacing
+  _env.out.print("\n=== Reddit REST Client Menu ===")
+  _env.out.print("1. Create Subreddit")
+  _env.out.print("2. Subscribe to Subreddit")
+  _env.out.print("3. Create Post")
+  _env.out.print("4. Get All Posts")
+  _env.out.print("5. Get Specific Post")
+  _env.out.print("6. Add Comment")
+  _env.out.print("7. Vote on Post")
+  _env.out.print("8. Vote on Comment")
+  _env.out.print("9. Get Subreddit Feed (Hot)")
+  _env.out.print("10. Get Subreddit Feed (New)")
+  _env.out.print("11. Get Subreddit Feed (Top)")
+  _env.out.print("12. Get Subreddit Feed (Controversial)")
+  _env.out.print("13. Get Subscribed Subreddits Feed")
+  _env.out.print("14. List Subreddits")
+  _env.out.print("15. Exit")
+  _env.out.print("\nEnter your choice:")
+  _env.input(recover MenuInputNotify(this, _env) end)
 
   be handle_menu_choice(choice: String) =>
     match choice
@@ -122,7 +123,8 @@ actor RedditRESTClient
     | "11" => get_subreddit_feed("top")
     | "12" => get_subreddit_feed("controversial")
     | "13" => get_subscribed_feed()
-    | "14" => _env.exitcode(0)
+    | "14" => list_subreddits()
+    | "15" => _env.exitcode(0)
     else
       _env.out.print("Invalid choice")
       display_menu()
@@ -175,6 +177,10 @@ actor RedditRESTClient
     
   fun ref get_controversial_feed() =>
     get_subreddit_feed("controversial")
+
+  be list_subreddits() =>
+    let headers = recover val Map[String, String] end
+    send_request(GET, "/subreddits", headers, "")
 
   be get_subscribed_feed() =>
     let headers = recover val 
@@ -318,25 +324,26 @@ actor RedditRESTClient
     let headers = recover val Map[String, String] end
     send_request(GET, "/posts/" + id, headers, "")
 
-  be add_comment_with_data(post_id: String, content: String) =>
+  be add_comment_with_data(post_id: String, subreddit_name: String, content: String) =>
     let headers = recover val 
       let map = Map[String, String]
       map("Content-Type") = "application/json"
       map
     end
-    
+
     let body = recover val
       let json = String
       json.append("{")
       json.append("\"username\":\"" + _username + "\",")
+      json.append("\"subreddit\":\"" + subreddit_name + "\",")
       json.append("\"content\":\"" + content + "\"")
       json.append("}")
       json
     end
-    
+
     send_request(POST, "/posts/" + post_id + "/comments", headers, body)
 
-  be vote_on_post_with_data(post_id: String, is_upvote: Bool) =>
+  be vote_on_post_with_data(post_id: String val, subreddit_name: String val, is_upvote: Bool val) =>
     let headers = recover val 
       let map = Map[String, String]
       map("Content-Type") = "application/json"
@@ -347,6 +354,7 @@ actor RedditRESTClient
       let json = String
       json.append("{")
       json.append("\"username\":\"" + _username + "\",")
+      json.append("\"subreddit\":\"" + subreddit_name + "\",")
       json.append("\"upvote\":" + if is_upvote then "true" else "false" end)
       json.append("}")
       json
@@ -354,7 +362,7 @@ actor RedditRESTClient
     
     send_request(POST, "/posts/" + post_id + "/vote", headers, body)
 
-  be vote_on_comment_with_data(post_id: String, comment_id: String, is_upvote: Bool) =>
+  be vote_on_comment_with_data(post_id: String val, subreddit_name: String val, comment_id: String val, is_upvote: Bool val) =>
     let headers = recover val 
       let map = Map[String, String]
       map("Content-Type") = "application/json"
@@ -365,6 +373,7 @@ actor RedditRESTClient
       let json = String
       json.append("{")
       json.append("\"username\":\"" + _username + "\",")
+      json.append("\"subreddit\":\"" + subreddit_name + "\",")
       json.append("\"upvote\":" + if is_upvote then "true" else "false" end)
       json.append("}")
       json
@@ -378,20 +387,40 @@ actor RedditRESTClient
 
 // Input handler classes for menu options
 class MenuInputNotify is InputNotify
-  let _client: RedditRESTClient tag
+  let _client: RedditRESTClient
+  let _buffer: String ref
   let _env: Env
-  
-  new iso create(client: RedditRESTClient tag, env: Env) =>
+
+  new iso create(client: RedditRESTClient, env: Env) =>
     _client = client
+    _buffer = String
     _env = env
-  
+
   fun ref apply(data: Array[U8] iso) =>
-    let input = String.from_array(consume data).>trim()
-    _client.handle_menu_choice(input)
-  
+    let input = String.from_array(consume data)
+    for c in input.values() do
+      if (c.u8() == 8) or (c.u8() == 127) then
+        if _buffer.size() > 0 then
+          _buffer.truncate(_buffer.size() - 1)
+          _env.out.write(recover val [8; 32; 8] end)
+        end
+      else
+        if (c == 10) or (c == 13) then
+          let choice = _buffer.clone().>trim()
+          if choice != "" then
+            _env.out.write(recover val [c.u8()] end)
+            _client.handle_menu_choice(choice)
+          end
+          _buffer.clear()
+        else
+          _env.out.write(recover val [c.u8()] end)
+          _buffer.push(c)
+        end
+      end
+    end
+
   fun ref dispose() =>
     None
-
 class CreateSubredditInputNotify is InputNotify
   let _client: RedditRESTClient
   let _env: Env
@@ -491,12 +520,14 @@ class AddCommentInputNotify is InputNotify
   let _env: Env
   var _stage: USize
   var _post_id: String
+  var _subreddit_name: String
   
-  new iso create(client: RedditRESTClient, env: Env, stage: USize = 0, post_id: String = "") =>
+  new iso create(client: RedditRESTClient, env: Env, stage: USize = 0, post_id: String = "", subreddit_name: String = "") =>
     _client = client
     _env = env
     _stage = stage
     _post_id = post_id
+    _subreddit_name = subreddit_name
   
   fun ref apply(data: Array[U8] iso) =>
     let input = String.from_array(consume data).>trim()
@@ -504,10 +535,14 @@ class AddCommentInputNotify is InputNotify
     match _stage
     | 0 =>
       _post_id = input
-      _env.out.print("Enter comment content:")
+      _env.out.print("Enter subreddit name:")
       _client.get_input(recover AddCommentInputNotify(_client, _env, 1, _post_id) end)
     | 1 =>
-      _client.add_comment_with_data(_post_id, input)
+      _subreddit_name = input
+      _env.out.print("Enter comment content:")
+      _client.get_input(recover AddCommentInputNotify(_client, _env, 2, _post_id, _subreddit_name) end)
+    | 2 =>
+      _client.add_comment_with_data(_post_id, _subreddit_name, input)
     end
   
   fun ref dispose() =>
@@ -518,26 +553,32 @@ class VotePostInputNotify is InputNotify
   let _env: Env
   var _stage: USize
   var _post_id: String
-  
-  new iso create(client: RedditRESTClient, env: Env, stage: USize = 0, post_id: String = "") =>
+  var _subreddit_name: String
+
+  new iso create(client: RedditRESTClient, env: Env, stage: USize = 0, post_id: String = "", subreddit_name: String = "") =>
     _client = client
     _env = env
     _stage = stage
     _post_id = post_id
-  
+    _subreddit_name = subreddit_name
+
   fun ref apply(data: Array[U8] iso) =>
     let input = String.from_array(consume data).>trim()
     
     match _stage
     | 0 =>
       _post_id = input
-      _env.out.print("Enter vote type (up/down):")
-      _client.get_input(recover VotePostInputNotify(_client, _env, 1, _post_id) end)
+      _env.out.print("Enter subreddit name:")
+      _client.get_input(recover VotePostInputNotify(_client, _env, 1, _post_id, "") end)
     | 1 =>
+      _subreddit_name = input
+      _env.out.print("Enter vote type (up/down):")
+      _client.get_input(recover VotePostInputNotify(_client, _env, 2, _post_id, _subreddit_name) end)
+    | 2 =>
       let is_upvote = input.lower() == "up"
-      _client.vote_on_post_with_data(_post_id, is_upvote)
+      _client.vote_on_post_with_data(_post_id, _subreddit_name, is_upvote)
     end
-  
+
   fun ref dispose() =>
     None
 
@@ -547,32 +588,37 @@ class VoteCommentInputNotify is InputNotify
   var _stage: USize
   var _post_id: String
   var _comment_id: String
-  
-  new iso create(client: RedditRESTClient, env: Env, stage: USize = 0, 
-    post_id: String = "", comment_id: String = "") =>
+  var _subreddit_name: String
+
+  new iso create(client: RedditRESTClient, env: Env, stage: USize = 0, post_id: String = "", comment_id: String = "", subreddit_name: String = "") =>
     _client = client
     _env = env
     _stage = stage
     _post_id = post_id
     _comment_id = comment_id
-  
+    _subreddit_name = subreddit_name
+
   fun ref apply(data: Array[U8] iso) =>
     let input = String.from_array(consume data).>trim()
     
     match _stage
     | 0 =>
       _post_id = input
-      _env.out.print("Enter comment ID:")
-      _client.get_input(recover VoteCommentInputNotify(_client, _env, 1, _post_id) end)
+      _env.out.print("Enter subreddit name:")
+      _client.get_input(recover VoteCommentInputNotify(_client, _env, 1, _post_id, "", "") end)
     | 1 =>
+      _subreddit_name = input
+      _env.out.print("Enter comment ID:")
+      _client.get_input(recover VoteCommentInputNotify(_client, _env, 2, _post_id, "", _subreddit_name) end)
+    | 2 =>
       _comment_id = input
       _env.out.print("Enter vote type (up/down):")
-      _client.get_input(recover VoteCommentInputNotify(_client, _env, 2, _post_id, _comment_id) end)
-    | 2 =>
+      _client.get_input(recover VoteCommentInputNotify(_client, _env, 3, _post_id, _comment_id, _subreddit_name) end)
+    | 3 =>
       let is_upvote = input.lower() == "up"
-      _client.vote_on_comment_with_data(_post_id, _comment_id, is_upvote)
+      _client.vote_on_comment_with_data(_post_id, _subreddit_name, _comment_id, is_upvote)
     end
-  
+
   fun ref dispose() =>
     None
 
@@ -606,48 +652,75 @@ class HTTPClientNotify is TCPConnectionNotify
   fun ref connected(conn: TCPConnection ref) =>
     _client.connected()
   
-  fun ref received(conn: TCPConnection ref, data: Array[U8] iso, times: USize): Bool =>
-    _env.out.print("Received data from server")
+fun ref received(conn: TCPConnection ref, data: Array[U8] iso, times: USize): Bool =>
+  let data_str = String.from_array(consume data)
+  
+  _buffer.append(data_str)
+  
+  try
+    let headers_end = _buffer.find("\r\n\r\n")?
+    let headers = recover val _buffer.substring(0, headers_end) end
+    let body_start = headers_end + 4
+    let body = recover val _buffer.substring(body_start) end
     
-    // Create a clone before consuming the data
-    let data_str = String.from_array(consume data)
-    _env.out.print("Raw data: " + data_str.clone())
-    
-    _buffer.append(data_str)
-    
-    try
-      let headers_end = _buffer.find("\r\n\r\n")?
-      _env.out.print("Found end of headers at: " + headers_end.string())
-      
-      let headers = recover val _buffer.substring(0, headers_end) end
-      _env.out.print("Headers:\n" + headers)
-      
-      var content_length: ISize = 0
-      for line in headers.split("\r\n").values() do
-        if line.lower().contains("content-length:") then
-          let len_str = line.substring(15).trim()
-          try
-            content_length = len_str.i64()?.isize()
-            _env.out.print("Content-Length: " + content_length.string())
+    if body.contains("\"posts\":[") then
+      try
+        let posts = body.substring(
+          body.find("\"posts\":[")? + 8,
+          body.find("]}")?)
+        
+        _env.out.print("\nPosts:")
+        
+        let post_array = recover val posts.split("},") end
+        for post in post_array.values() do
+          _env.out.print("\n---")
+          let clean_post = recover val 
+            if post.substring(-1) == "}" then 
+              post 
+            else 
+              post + "}" 
+            end
           end
-          break
+          
+          try
+            // Extract and format individual post fields
+            let title = recover val clean_post.substring(
+              clean_post.find("\"title\":\"")? + 9,
+              clean_post.find("\",\"author\"")?)
+            end
+              
+            let author = recover val clean_post.substring(
+              clean_post.find("\"author\":\"")? + 10,
+              clean_post.find("\",\"content\"")?)
+            end
+              
+            let content = recover val clean_post.substring(
+              clean_post.find("\"content\":\"")? + 11,
+              clean_post.find("\",\"score\"")?)
+            end
+              
+            let score = recover val clean_post.substring(
+              clean_post.find("\"score\":")? + 8,
+              clean_post.find(",\"upvotes\"")?)
+            end
+            
+            // Print formatted post
+            _env.out.print("Title: " + title.clone())
+            _env.out.print("Author: " + author.clone())
+            _env.out.print("Content: " + content.clone())
+            _env.out.print("Score: " + score.clone())
+          end
         end
       end
-      
-      let body_start = headers_end + 4
-      if (_buffer.size().isize() - body_start) >= content_length then
-        _env.out.print("Have complete message")
-        let body = recover val _buffer.substring(body_start) end
-        _env.out.print("Body: " + body)
-        _client.received(body)
-        _buffer = recover iso String end
-      else
-        _env.out.print("Waiting for more data...")
-      end
     else
-      _env.out.print("Still collecting headers...")
+      // For other responses, just print the body
+      _env.out.print("\nServer Response: " + body)
     end
-    true
+
+    _client.received(body)
+    _buffer = recover iso String end
+  end
+  true
   
   fun ref connect_failed(conn: TCPConnection ref) =>
     _env.out.print("Connection failed")
@@ -682,25 +755,24 @@ class LineReaderNotify is InputNotify
 
   fun ref apply(data: Array[U8] iso) =>
     for byte in (consume data).values() do
-      if (byte == 8) or (byte == 127) then
+      if (byte == 8) or (byte == 127) then  // Backspace
         if _buffer.size() > 0 then
           try
             _buffer.pop()?
             _env.out.write(recover val [8; 32; 8] end)
           end
         end
-      else
-        _env.out.write(recover val [byte] end)
-        if byte == 10 then
-          let line = recover iso Array[U8] end
-          for b in _buffer.values() do
-            line.push(b)
-          end
-          _input_handler.apply(consume line)
-          _buffer.clear()
-        else
-          _buffer.push(byte)
+      elseif byte == 10 then  // Enter/Return
+        _env.out.write([10])
+        let line = recover iso Array[U8] end
+        for b in _buffer.values() do
+          line.push(b)
         end
+        _input_handler.apply(consume line)
+        _buffer.clear()
+      else
+        _buffer.push(byte)
+        _env.out.write(recover val [byte] end)
       end
     end
 

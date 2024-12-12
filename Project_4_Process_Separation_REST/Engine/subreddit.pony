@@ -5,12 +5,14 @@ use "time"
 class Subreddit
   let name: String
   var members: Set[String] ref
-  var posts: Array[RedditPost] ref
+  var posts: Map[USize, RedditPost] ref  // Change Array to Map with ID as key
+  var next_post_id: USize  // Add post ID counter
 
   new create(name': String) =>
     name = name'
     members = Set[String]
-    posts = Array[RedditPost]
+    posts = Map[USize, RedditPost]
+    next_post_id = 0
 
   fun ref add_member(username: String) =>
     members.set(username)
@@ -27,25 +29,38 @@ class Subreddit
   fun get_members_clone(): Set[String] =>    
     members.clone()
 
-  fun ref create_post(title: String, content: String, author: String): Bool =>
+  fun ref create_post(title: String, content: String, author: String): (USize | None) =>
     if members.contains(author) then
-      let post = RedditPost(title, content, author)
-      posts.push(post)
-      true
+      let post_id = next_post_id
+      next_post_id = next_post_id + 1
+      let post = RedditPost(post_id, title, content, author)
+      posts(post_id) = post
+      post_id  // Return the ID of the created post
     else
-      false
+      None
     end
     
-  fun ref get_posts(): Array[RedditPost] ref =>
+  fun ref get_posts(): Map[USize, RedditPost] ref =>
     posts
 
-  fun ref get_sorted_posts(sort_type: U8): Array[RedditPost] ref^ =>
-    PostSorter(posts, sort_type)
+  fun ref get_post(id: USize): RedditPost ? =>
+    posts(id)?
 
-  fun ref add_comment_to_post(post_index: USize, author: String, content: String): Bool =>
+  fun ref get_posts_array(): Array[RedditPost] ref^ =>
+    let arr = recover ref Array[RedditPost] end
+    for post in posts.values() do
+      arr.push(post)
+    end
+    arr
+
+  fun ref get_sorted_posts(sort_type: U8): Array[RedditPost] ref^ =>
+    let posts_arr = get_posts_array()
+    PostSorter(posts_arr, sort_type)
+
+  fun ref add_comment_to_post(post_id: USize, author: String, content: String): Bool =>
     try
       if members.contains(author) then
-        posts(post_index)?.add_comment(author, content)
+        posts(post_id)?.add_comment(author, content)
         true
       else
         false
@@ -54,10 +69,10 @@ class Subreddit
       false
     end
 
-  fun ref vote_on_post(post_index: USize, username: String, is_upvote: Bool): Bool =>
+  fun ref vote_on_post(post_id: USize, username: String, is_upvote: Bool): Bool =>
     try
       if members.contains(username) then
-        let post = posts(post_index)?
+        let post = posts(post_id)?
         if is_upvote then
           post.upvote(username)
         else

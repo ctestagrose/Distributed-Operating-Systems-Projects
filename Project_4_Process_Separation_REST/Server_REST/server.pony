@@ -51,17 +51,23 @@ actor RedditEngineWrapper
   _engine.register_user("system_bot", "A bot that creates initial content")
   _engine.join_subreddit("system_bot", "programming")
   
-  _engine.create_post("system_bot", "programming", 
+  match _engine.create_post("system_bot", "programming", 
     "Intro to Pony Programming", 
     "Pony is an actor-model language focusing on safety and performance.")
-    
-  _engine.create_post("system_bot", "programming",
+  | None => _env.out.print("Failed to create initial post")
+  end
+  
+  match _engine.create_post("system_bot", "programming",
     "Understanding Reference Capabilities",
     "Reference capabilities are key to Pony's concurrency model.")
-    
-  _engine.create_post("system_bot", "programming",
+  | None => _env.out.print("Failed to create initial post")
+  end
+  
+  match _engine.create_post("system_bot", "programming",
     "Actor Communication Patterns",
     "Best practices for message passing between actors in distributed systems.")
+  | None => _env.out.print("Failed to create initial post")
+  end
 
   _env.out.print("Initialized test content")
   
@@ -86,25 +92,38 @@ actor RedditEngineWrapper
     _engine.add_comment(username, subreddit, post_id, content)
 
 
+  be get_all_posts(conn: TCPConnection tag) =>
+    let feed = _engine.get_popular_feed()
+    let response = JsonBuilder.feed_to_json(feed)
+    
+    let headers = recover val 
+      let map = Map[String, String]
+      map("Content-Type") = "application/json"
+      map
+    end
+    
+    let http_response = HTTPResponse(200, headers, response)
+    conn.write(http_response.string())
+
   be vote_on_comment(username: String, subreddit: String, post_id: USize, 
     comment_id: USize, is_upvote: Bool) =>
     _engine.vote_on_comment(username, subreddit, post_id, comment_id, is_upvote)
     _env.out.print("Processed vote on comment " + comment_id.string())
 
   be get_post(post_id: USize, conn: TCPConnection tag) =>
-      // Search through all subreddits to find the post
-      for (subreddit_name, subreddit) in _engine.subreddits.pairs() do
-        try
-          let post = _engine.get_post(post_id, subreddit_name)?
-          let response = JsonBuilder.post_with_comments(post)
-          conn.write(response)
-          return
-        end
+    // Search through all subreddits to find the post
+    for (subreddit_name, subreddit) in _engine.subreddits.pairs() do
+      try
+        let post = _engine.get_post(post_id, subreddit_name)?
+        let response = JsonBuilder.post_with_comments(post)
+        conn.write(response)
+        return
       end
-      // If we get here, post wasn't found
-      let headers = recover val Map[String, String] end
-      let error_response = HTTPResponse(404, headers, "{\"error\":\"Post not found\"}\n")
-      conn.write(error_response.string())
+    end
+    // If we get here, post wasn't found
+    let headers = recover val Map[String, String] end
+    let error_response = HTTPResponse(404, headers, "{\"error\":\"Post not found\"}\n")
+    conn.write(error_response.string())
 
   be get_popular_feed(conn: TCPConnection tag) =>
     let feed = _engine.get_popular_feed()
@@ -173,34 +192,73 @@ actor RedditEngineWrapper
       conn.write(error_response.string())
     end
 
-
-primitive JsonBuilder
-  fun feed_to_json(feed: PostFeed): String =>
+  be get_all_subreddits(conn: TCPConnection tag) =>
     let response = recover iso String end
-    response.append("{\"posts\":[")
+    response.append("{\"subreddits\":[")
     
     var first = true
-    for post in feed.posts.values() do
+    for (name, subreddit) in _engine.subreddits.pairs() do
       if not first then response.append(",") end
       response.append("{")
-      response.append("\"id\":\"" + post.created_at.string() + "\",")
-      response.append("\"title\":\"" + post.title + "\",")
-      response.append("\"author\":\"" + post.author + "\",")
-      response.append("\"content\":\"" + post.content + "\",")
-      response.append("\"score\":" + post.get_score().string() + ",")
-      response.append("\"upvotes\":" + post.upvotes.size().string() + ",")
-      response.append("\"downvotes\":" + post.downvotes.size().string() + ",")
-      response.append("\"commentCount\":" + post.get_comments().size().string())
+      response.append("\"name\":\"" + name + "\",")
+      response.append("\"memberCount\":" + subreddit.get_member_count().string() + ",")
+      response.append("\"postCount\":" + subreddit.get_posts().size().string() + ",")
+      
+      // Calculate total engagement (comments + votes across all posts)
+      var total_comments: USize = 0
+      var total_votes: USize = 0
+      for post in subreddit.get_posts().values() do
+        total_comments = total_comments + post.get_comments().size()
+        total_votes = total_votes + post.upvotes.size() + post.downvotes.size()
+      end
+      
+      response.append("\"totalComments\":" + total_comments.string() + ",")
+      response.append("\"totalVotes\":" + total_votes.string())
       response.append("}")
       first = false
     end
     
     response.append("]}")
-    consume response
+
+    let headers = recover val 
+      let map = Map[String, String]
+      map("Content-Type") = "application/json"
+      map
+    end
+    
+    let http_response = HTTPResponse(200, headers, consume response)
+    conn.write(http_response.string())
+
+
+
+primitive JsonBuilder
+  fun feed_to_json(feed: PostFeed): String =>
+      let response = recover iso String end
+      response.append("{\"posts\":[")
+      
+      var first = true
+      for post in feed.posts.values() do
+        if not first then response.append(",") end
+        response.append("{")
+        response.append("\"id\":" + post.id.string() + ",")  // Use internal ID instead of timestamp
+        response.append("\"title\":\"" + post.title + "\",")
+        response.append("\"author\":\"" + post.author + "\",")
+        response.append("\"content\":\"" + post.content + "\",")
+        response.append("\"score\":" + post.get_score().string() + ",")
+        response.append("\"upvotes\":" + post.upvotes.size().string() + ",")
+        response.append("\"downvotes\":" + post.downvotes.size().string() + ",")
+        response.append("\"commentCount\":" + post.get_comments().size().string())
+        response.append("}")
+        first = false
+      end
+      
+      response.append("]}")
+      consume response
 
   fun post_to_json(post: RedditPost): String val =>
     let json = recover iso String end
     json.append("{")
+    json.append("\"id\":" + post.id.string() + ",")  // Use internal ID
     json.append("\"title\":\"" + post.title + "\",")
     json.append("\"author\":\"" + post.author + "\",")
     json.append("\"content\":\"" + post.content + "\",")
@@ -208,7 +266,6 @@ primitive JsonBuilder
     json.append("\"upvotes\":" + post.upvotes.size().string() + ",")
     json.append("\"downvotes\":" + post.downvotes.size().string() + ",")
     json.append("\"commentCount\":" + post.get_comments().size().string() + ",")
-    json.append("\"created_at\":" + post.created_at.string() + ",")
     json.append("\"hotScore\":" + post.get_hot_score().string() + ",")
     json.append("\"controversyScore\":" + post.get_controversy_score().string() + ",")
     json.append("\"comments\":" + comments_to_json(post.get_comments()))
@@ -459,6 +516,13 @@ fun ref initialize_routes() =>
       end
     }))
 
+    _routes.push(Route(GET, "/subreddits", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
+        _reddit_engine.get_all_subreddits(conn)
+        
+        // Return empty response since actual response will be sent asynchronously
+        let headers = recover val Map[String, String] end
+        HTTPResponse(200, headers, "")
+    }))
 
     // Subreddit subscribe route
     _routes.push(Route(POST, "/subreddits/:name/subscribe", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
@@ -571,7 +635,7 @@ fun ref initialize_routes() =>
 
     _routes.push(Route(POST, "/posts/:id/vote", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
       try
-        let post_id = params("id")?.usize()?
+        let post_id = params("id")?.usize()?  // Parse ID as number
         let json = JsonParser.parse(request.body, _env)?
         let username = json("username")? as String
         let subreddit = json("subreddit")? as String
@@ -593,17 +657,13 @@ fun ref initialize_routes() =>
 
     // Get all posts
     _routes.push(Route(GET, "/posts", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
-        let feed = _reddit_engine.get_popular_feed(conn)
+        _reddit_engine.get_all_posts(conn)
         
-        let headers = recover val 
-          let map = Map[String, String]
-          map("Content-Type") = "application/json"
-          map
-        end
-        
-        // Empty response since actual feed will be sent asynchronously
+        // Return empty response since the actual response will be sent asynchronously
+        let headers = recover val Map[String, String] end
         HTTPResponse(200, headers, "")
     }))
+
 
     // Get specific post with comments
     _routes.push(Route(GET, "/posts/:id", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
@@ -696,7 +756,7 @@ fun ref initialize_routes() =>
 
     _routes.push(Route(POST, "/posts/:id/comments", {(request: HTTPRequest, params: Map[String, String] val, conn: TCPConnection tag): HTTPResponse =>
       try
-        let post_id = params("id")?.usize()?
+        let post_id = params("id")?.usize()?  // This will parse the ID as a number
         let json = JsonParser.parse(request.body, _env)?
         let username = json("username")? as String
         let content = json("content")? as String

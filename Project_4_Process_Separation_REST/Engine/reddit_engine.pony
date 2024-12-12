@@ -110,34 +110,33 @@ fun ref run(num_users: U64) =>
       _env.out.print("Members: " + ",".join(sub.get_members_clone().values()))
     end
 
-  fun ref get_post(post_id: USize, subreddit_name: String): RedditPost ? =>
-    let subreddit = subreddits(subreddit_name)?
-    let posts = subreddit.get_posts()
-    if post_id < posts.size() then
-      posts(post_id)?
-    else
-      error
-    end
-
-
-  fun ref create_post(username: String, subreddit_name: String, title: String, content: String) =>
+  fun ref create_post(username: String, subreddit_name: String, title: String, content: String): (USize | None) =>
     try
       let start_time = Time.now()._2.f64() / 1_000_000.0
       let subreddit = subreddits(subreddit_name)?
-      if subreddit.create_post(title, content, username) then
+      match subreddit.create_post(title, content, username)
+      | let post_id: USize =>
         _metrics.track_post(subreddit_name, username)
         _env.out.print(username + " created a post in " + subreddit_name + ": " + title)
         try
           let user = users(username)?
           user.add_post_karma(1, subreddit_name)
-          user.add_post(title, subreddit_name, subreddit.get_posts().size() - 1)
+          user.add_post(title, subreddit_name, post_id)
         end
+        let end_time = Time.now()._2.f64() / 1_000_000.0
+        _metrics.track_response_time(end_time - start_time)
+        post_id
       else
         _env.out.print("Error: " + username + " is not a member of " + subreddit_name)
+        None
       end
-      let end_time = Time.now()._2.f64() / 1_000_000.0
-      _metrics.track_response_time(end_time - start_time)
+    else
+      None
     end
+
+  fun ref get_post(post_id: USize, subreddit_name: String): RedditPost ? =>
+    let subreddit = subreddits(subreddit_name)?
+    subreddit.get_post(post_id)?
 
   fun ref print_sorted_posts(subreddit_name: String, sort_type: U8) =>
     try
@@ -168,23 +167,23 @@ fun ref run(num_users: U64) =>
     end
 
 
-  fun ref add_comment(username: String, subreddit_name: String, post_index: USize, content: String) =>
+  fun ref add_comment(username: String, subreddit_name: String, post_id: USize, content: String) =>
     try
       let start_time = Time.now()._2.f64() / 1_000_000.0
       let subreddit = subreddits(subreddit_name)?
-      if subreddit.add_comment_to_post(post_index, username, content) then
+      if subreddit.add_comment_to_post(post_id, username, content) then
         _metrics.track_comment(subreddit_name, username)
-        _env.out.print(username + " commented on post " + post_index.string())
+        _env.out.print(username + " commented on post " + post_id.string())
         try
           let user = users(username)?
           user.add_comment_karma(1, subreddit_name)
-          user.add_comment(content, subreddit_name, post_index)
+          user.add_comment(content, subreddit_name, post_id)
         end
       else
-        _env.out.print("Error: Could not add comment")
+        _env.out.print("Error: Could not add comment. User may not be subscribed.")
       end
       let end_time = Time.now()._2.f64() / 1_000_000.0
-      _metrics.track_response_time((end_time - start_time).f64() / 1000000.0)
+      _metrics.track_response_time(end_time - start_time)
     end
   
   fun ref vote_on_comment(username: String, subreddit_name: String, post_index: USize, 
@@ -410,13 +409,14 @@ fun ref run(num_users: U64) =>
       let start_time = Time.now()._2
       let source_sub = subreddits(original_subreddit)?
       let target_sub = subreddits(target_subreddit)?
-      let original_post = source_sub.get_posts()(post_index)?
+      let original_post = source_sub.get_post(post_index)?
       
       let repost_title = recover val "[Repost] " + original_post.title end
       let repost_content = recover val original_post.content + "\n\nOriginal by u/" + 
         original_post.author + " in r/" + original_subreddit end
       
-      if target_sub.create_post(repost_title, repost_content, reposter) then
+      match target_sub.create_post(repost_title, repost_content, reposter)
+      | let post_id: USize => 
         _metrics.track_repost(target_subreddit, reposter)
         let end_time = Time.now()._2
         _metrics.track_response_time((end_time - start_time).f64() / 1000000.0)
