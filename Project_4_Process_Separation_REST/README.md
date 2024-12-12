@@ -27,8 +27,10 @@ Before proceeding, please ensure proper installation of Pony by following the gu
 ## What is Currently Working
 - Client
   - [X] RESTful client that communicates to the server.
+  - [X] Client outputs messages that show communication with server.  
 - Server
   - [X] RESTful server that communicates with the client.
+  - [X] Server outputs messages that show communication with client.  
 - Reddit engine:
   - [X] Register account (Clients provide only usernames for simplicity right now)
   - [X] Create & join sub-reddit; leave sub-reddit (Clients can create/join/leave subreddits)
@@ -37,3 +39,6 @@ Before proceeding, please ensure proper installation of Pony by following the gu
   - [X] Hierarchical comments (Users can comment on comments/posts in hierarchical format) 
   - [X] Upvote, downvote, compute Karma (Clients can upvote and downvote, karma is computed)
   - [X] Get feed of posts (Clients can get a current feed of the subreddits they subscribe to) - have other filtering methods (hot, new, etc.) but they are not implemented into the client yet
+ 
+## Additional Functionality Needed (with more time)
+- A more robust and fleshed out html/css-based client that would communicate with the server and provide a more pleasing visual experience.
