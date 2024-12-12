@@ -12,6 +12,7 @@ primitive MathUtils
     end
 
 class RedditPost
+  let id: USize      // Add unique ID field
   let title: String
   let content: String
   let author: String
@@ -20,7 +21,8 @@ class RedditPost
   var upvotes: Set[String] ref
   var downvotes: Set[String] ref
   
-  new create(title': String, content': String, author': String) =>
+  new create(id': USize, title': String, content': String, author': String) =>
+    id = id'
     title = title'
     content = content'
     author = author'
