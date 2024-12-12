@@ -149,6 +149,101 @@ actor User
       end
     end
 
+  be get_messages_for_server(env: Env, conn: TCPConnection tag) =>
+    let response = recover iso String end
+    response.append("{\"messages\":[")
+    
+    var first = true
+    for message in _inbox.values() do
+      if not first then response.append(",") end
+      response.append("{")
+      response.append("\"id\":\"" + message.message_id + "\",")
+      response.append("\"thread_id\":\"" + message.thread_id + "\",")
+      response.append("\"sender\":\"" + message.sender + "\",")
+      response.append("\"content\":\"" + message.content.clone().>replace("\"", "\\\"") + "\",")
+      response.append("\"timestamp\":" + message.timestamp.string())
+      response.append("}")
+      first = false
+    end
+    
+    response.append("]}")
+    
+    let headers = recover val 
+      let map = Map[String, String]
+      map("Content-Type") = "application/json"
+      map
+    end
+    
+    let http_response = HTTPResponse(200, headers, consume response)
+    conn.write(http_response.string())
+
+  be get_message_thread_for_server(env: Env, thread_id: String, conn: TCPConnection tag) =>
+    let response = recover iso String end
+    response.append("{\"thread\":[")
+    
+    var first = true
+    
+    try
+      let thread = _message_threads(thread_id)?
+      for message in thread.values() do
+        if not first then response.append(",") end
+        response.append("{")
+        response.append("\"id\":\"" + message.message_id + "\",")
+        response.append("\"sender\":\"" + message.sender + "\",")
+        response.append("\"recipient\":\"" + message.recipient + "\",")
+        response.append("\"content\":\"" + message.content.clone().>replace("\"", "\\\"") + "\",")
+        response.append("\"timestamp\":" + message.timestamp.string())
+        response.append("}")
+        first = false
+      end
+    end
+    
+    response.append("]}")
+    
+    let headers = recover val 
+      let map = Map[String, String]
+      map("Content-Type") = "application/json"
+      map
+    end
+    
+    let http_response = HTTPResponse(200, headers, consume response)
+    conn.write(http_response.string())
+
+
+  be get_messages_json(conn: TCPConnection tag) =>
+    let response = recover iso String end
+    response.append("MESSAGES")
+    
+    for message in _inbox.values() do
+      response.append(" ###MSG###")
+      response.append(" " + message.sender)
+      response.append(" " + message.content.clone().>replace(" ", "_"))
+      response.append(" " + message.timestamp.string())
+      response.append(" " + message.message_id)
+    end
+    
+    conn.write(consume response)
+
+  be get_thread_json(thread_id: String, conn: TCPConnection tag) =>
+    try
+      let response = recover iso String end
+      response.append("THREAD")
+      
+      let thread = _message_threads(thread_id)?
+      for message in thread.values() do
+        response.append(" ###MSG###")
+        response.append(" " + message.sender)
+        response.append(" " + message.recipient)
+        response.append(" " + message.content.clone().>replace(" ", "_"))
+        response.append(" " + message.timestamp.string())
+        response.append(" " + message.message_id)
+      end
+      
+      conn.write(consume response)
+    else
+      conn.write("ERROR: Thread not found")
+    end
+
   be get_messages(env: Env) =>
     env.out.print("\nInbox for " + _profile.username + ":")
     for message in _inbox.values() do

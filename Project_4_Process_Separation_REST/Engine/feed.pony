@@ -47,15 +47,22 @@ class Feed
   fun ref generate_user_feed(subreddits: Map[String, Subreddit] ref, username: String, 
     sort_type: U8 = SortType.hot()): PostFeed =>
     let feed = PostFeed(_env)
+    
+    let username_val = recover val username.clone().>strip() end
+    
     for (subreddit_name, subreddit) in subreddits.pairs() do
-        if subreddit.get_members().contains(username) then
-          for post in subreddit.get_posts().values() do
-            feed.add_post(post)
-          end
+      let members = subreddit.get_members_clone()
+      
+      if members.contains(username_val) then
+        _env.out.print("✓ User is member of: " + subreddit_name)
+        let posts = subreddit.get_posts()
+        
+        for (post_id, post) in posts.pairs() do
+          feed.add_post(post)
         end
+      end
     end
     feed.sort_by(sort_type)
-
     feed
 
   fun ref generate_popular_feed(subreddits: Map[String, Subreddit] ref, 

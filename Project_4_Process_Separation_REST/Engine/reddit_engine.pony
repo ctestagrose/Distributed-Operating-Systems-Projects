@@ -138,6 +138,15 @@ fun ref run(num_users: U64) =>
     let subreddit = subreddits(subreddit_name)?
     subreddit.get_post(post_id)?
 
+  fun ref get_post_with_comments(post_id: USize): (RedditPost, String) ? =>
+    for (subreddit_name, subreddit) in subreddits.pairs() do
+      try
+        let post = subreddit.get_post(post_id)?
+        return (post, subreddit_name)
+      end
+    end
+    error
+
   fun ref print_sorted_posts(subreddit_name: String, sort_type: U8) =>
     try
       let sub = subreddits(subreddit_name)?
