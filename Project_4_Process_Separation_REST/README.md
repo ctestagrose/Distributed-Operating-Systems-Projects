@@ -15,14 +15,13 @@ Before proceeding, please ensure proper installation of Pony by following the gu
 - Client: Using terminal, navigate to the Client_REST folder and run ```ponyc```
 - Server: Using terminal, navigate to the Server_REST folder and run ```ponyc```
 ### Running the Reddit Server:
-- Within the Server Folder run ```./Server_REST <Num_Clients_To_Spawn>```
-- The Server will start up and listen on localhost port 8989
-- Upon binding, the server will then spawn the specified number of clients.
+- Within the Server Folder run ```./Server_REST```
+- The Server will start up and listen on localhost port 8989.
 
 ### Running the Dedicated Client:
 - Within the Client Folder run ```./Client_REST <username>```
-- The dedicated client allows for an individual to interact with the reddit engine and the simulation.
-- The user can perform all tasks that the simulated clients can perform (post, create subreddits, etc.) with the additional capability of printing metrics from the simulation.
+- The dedicated client allows for an individual to interact with the reddit engine.
+- The user can perform all basic tasks in the displayed menu. 
 
 ## What is Currently Working
 - Client
@@ -36,15 +35,16 @@ Before proceeding, please ensure proper installation of Pony by following the gu
   - [X] Create & join sub-reddit; leave sub-reddit (Clients can create/join/leave subreddits)
   - [X] Post in sub-reddit. (Clients can currently post simple randomized text in subreddits)
   - [X] Comment in sub-reddit. (Clients can currently comment simple randomized text on posts and comments within subreddits)
+  - [X] Messaging between users.
   - [X] Hierarchical comments (Users can comment on comments/posts in hierarchical format) 
   - [X] Upvote, downvote, compute Karma (Clients can upvote and downvote, karma is computed)
-  - [X] Get feed of posts (Clients can get a current feed of the subreddits they subscribe to) - have other filtering methods (hot, new, etc.) but they are not implemented into the client yet
+  - [X] Get feed of posts (Clients can get a current feed of the subreddits they subscribe to) - have other filtering methods (hot, new, etc.) but their accuracy cannot be guaranteed at this time.
 
 ## Demo Video
 [Demo Video - Links to YouTube](https://www.youtube.com/watch?v=bgsa9GIybos)
 
 ## Known Limitations/Issues
-- Some json parsing issues exist causing the format in terminal to not always be pretty
+- Some json parsing issues exist causing the format in terminal to not always be pretty and can be difficult to read. 
 
 ## Additional Functionality Needed (with more time)
 - A more robust and fleshed out html/css-based client that would communicate with the server and provide a more pleasing visual experience.
