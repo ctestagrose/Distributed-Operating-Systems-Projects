@@ -41,7 +41,7 @@ Before proceeding, please ensure proper installation of Pony by following the gu
   - [X] Get feed of posts (Clients can get a current feed of the subreddits they subscribe to) - have other filtering methods (hot, new, etc.) but their accuracy cannot be guaranteed at this time.
 
 ## Demo Video
-[Demo Video - Links to YouTube](https://www.youtube.com/watch?v=bgsa9GIybos)
+[Demo Video - Links to YouTube](https://youtu.be/GdilMHQZjiM)
 
 ## Known Limitations/Issues
 - Some json parsing issues exist causing the format in terminal to not always be pretty and can be difficult to read. 
